@@ -183,8 +183,6 @@ uint32_t loader_main(uint32_t boot_stack) {
             pg_reserve[i].ents[j] = 0;
     }
 
-    // identity_map(0, (uint64_t)&__loader_end__);
-    identity_map(0, 4 * PAGE_SIZE);
     asm volatile("hlt");
     init_cpu_state();
     while (1)

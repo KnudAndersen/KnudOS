@@ -3,7 +3,8 @@ TARGET_64:=x86_64-elf
 
 CROSS_DIR:=./cross
 SRC=./src
-LIB_32=./lib32
+LIB_32=$(SRC)/lib32
+LIB_64=$(SRC)/lib64
 BUILD:=./build
 
 CC_32:=$(shell find $(CROSS_DIR) -name '$(TARGET_32)-gcc')
@@ -22,6 +23,8 @@ LINK_32:=$(CC_32)
 LINK_64:=$(CC_64)
 LFLAGS_32:=-ffreestanding -nostdlib -static -lgcc
 LFLAGS_64:=-ffreestanding -nostdlib -static -lgcc
+LINK_SCRIPT_32=$(LIB_32)/link32.ld
+LINK_SCRIPT_64=$(LIB_64)/link64.ld
 
 ASM_32:=/usr/bin/nasm
 ASM_64:=$(ASM_64)
@@ -31,7 +34,7 @@ AFLAGS_64:=-felf64 -F dwarf -g
 SRC_32:=$(shell find $(LIB_32) -name '*.c' -or -name '*.asm')
 OBJ_32:=$(SRC_32:%=$(BUILD)/%.32.o)
 
-SRC_64:=$(shell find $(SRC) -name '*.c' -or -name '*.asm')
+SRC_64:=$(shell find $(LIB_64) -name '*.c' -or -name '*.asm')
 OBJ_64:=$(SRC_64:%=$(BUILD)/%.64.o)
 
 LOADER_BIN:=$(BUILD)/loader.BIN
@@ -45,10 +48,10 @@ GRUB_CFG:=$(ISO_DIR)/boot/grub/grub.cfg
 
 all: iso
 
-$(LOADER_BIN): $(OBJ_32) $(LIB_32)/link32.ld
-	$(LINK_32) $(LFLAGS_32) -T $(LIB_32)/link32.ld $(OBJ_32) -o $@ -lgcc
-$(KERNEL_BIN): $(OBJ_64) $(SRC)/link64.ld
-	$(LINK_64) $(LFLAGS_64) -T $(SRC)/link64.ld $(OBJ_64) -o $@ -lgcc
+$(LOADER_BIN): $(OBJ_32) $(LINK_SCRIPT_32) 
+	$(LINK_32) $(LFLAGS_32) -T $(LINK_SCRIPT_32) $(OBJ_32) -o $@ -lgcc
+$(KERNEL_BIN): $(OBJ_64) $(LINK_SCRIPT_64)
+	$(LINK_64) $(LFLAGS_64) -T $(LINK_SCRIPT_64) $(OBJ_64) -o $@ -lgcc
 
 $(BUILD)/%.c.32.o: %.c
 	mkdir -p $(dir $@)
