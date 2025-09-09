@@ -1,2 +1,3 @@
 cross/
 build/
+lib32/*.o

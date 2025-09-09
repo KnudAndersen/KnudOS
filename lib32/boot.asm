@@ -4,6 +4,7 @@ MB_MMAP equ (1 << 1)
 MB_MAGIC equ 0x1BADB002
 MB_FLAGS equ (MB_PG_ALIGN + MB_MMAP)
 MB_CHECKSUM equ -(MB_MAGIC + MB_FLAGS)
+LOADER_ERR equ (0)
 
 section .multiboot
 align 4
@@ -18,7 +19,6 @@ boot_stack_lo:
     resb STACK_SIZE
 boot_stack_hi:
 
-LOADER_ERR equ (0)
 section .text
 global start
 start:

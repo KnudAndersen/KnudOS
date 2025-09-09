@@ -34,7 +34,7 @@ enum { GDT_NULL = 0, GDT_KERN_CODE, GDT_KERN_DATA, GDT_USER_CODE, GDT_USER_DATA,
 #define PG_ENT              (512)
 #define PG_PAGE_OFF_MASK    (0xFFF)
 #define PG_STRUC_IDX_MASK   (0x1FF)
-#define PG_STRUC_STATIC_NUM (10)
+#define PG_STRUC_STATIC_NUM (256 + 1 + 1)
 #define PG_PRESENT          (1 << 0)
 #define PG_RDWR             (1 << 1)
 #define PG_DEFAULT_FLAGS    (PG_PRESENT | PG_RDWR)
@@ -59,7 +59,7 @@ typedef struct gdt32_base_reg {
 
 typedef struct {
     uint64_t ents[PG_ENT];
-} page_t;
+} __attribute__((packed)) page_t;
 
 typedef uint64_t gdt_desc;
 
@@ -164,52 +164,9 @@ void init_cpu_state() {
     return;
 }
 
-void map_memory(page_t* pml4, uint64_t phys, uint64_t virt, uint64_t flags) {
-    //    uint64_t pg_off = (virt >> 0) & PG_PAGE_OFF_MASK;
-    uint64_t pti = (virt >> 12) & PG_STRUC_IDX_MASK;
-    uint64_t pdti = (virt >> 21) & PG_STRUC_IDX_MASK;
-    uint64_t pdpti = (virt >> 30) & PG_STRUC_IDX_MASK;
-    uint64_t pml4i = (virt >> 39) & PG_STRUC_IDX_MASK;
-    if (!(pml4->ents[pml4i] & PG_PRESENT)) {
-        pml4->ents[pml4i] = (uint64_t)(uintptr_t)&pg_reserve[reserve_used++];
-        if (reserve_used >= PG_STRUC_STATIC_NUM) {
-            while (1)
-                asm volatile("hlt");
-        }
-    }
-    page_t* pdpt = (page_t*)pml4->ents[pml4i];
-    if (!(pdpt->ents[pdpti] & PG_PRESENT)) {
-        pdpt->ents[pdpti] = (uint64_t)(uintptr_t)&pg_reserve[reserve_used++];
-        if (reserve_used >= PG_STRUC_STATIC_NUM) {
-            while (1)
-                asm volatile("hlt");
-        }
-    }
-    page_t* pdt = (page_t*)pdpt->ents[pdpti];
-    if (!(pdt->ents[pdti] & PG_PRESENT)) {
-        pdt->ents[pdti] = (uint64_t)(uintptr_t)&pg_reserve[reserve_used++];
-        if (reserve_used >= PG_STRUC_STATIC_NUM) {
-            while (1)
-                asm volatile("hlt");
-        }
-    }
-    page_t* pt = (page_t*)pdpt->ents[pdpti];
-    if (!(pt->ents[pti] & PG_PRESENT)) {
-        pt->ents[pti] = (uint64_t)(uintptr_t)&pg_reserve[reserve_used++];
-        if (reserve_used >= PG_STRUC_STATIC_NUM) {
-            while (1)
-                asm volatile("hlt");
-        }
-    }
-    pt->ents[pti] = (phys & ~(PAGE_SIZE - 1)) | flags;
+uint32_t load_kernel(void* multiboot) {
+    return LOAD_ERR;
 }
-void identity_map(uint64_t start, uint64_t end) {
-    start &= ~(PAGE_SIZE - 1);
-    end = ((end + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
-    for (uint64_t addr = start; addr <= end; addr += PAGE_SIZE)
-        map_memory(&pml4, addr, addr, PG_DEFAULT_FLAGS);
-}
-uint32_t load_kernel(void* multiboot);
 
 uint32_t loader_main(uint32_t boot_stack) {
     if (long_mode_supported() == LOAD_ERR) {
@@ -218,13 +175,17 @@ uint32_t loader_main(uint32_t boot_stack) {
     void* mboot_paddr = (void*)(uintptr_t)get_ebx();
     init_gdt();
     init_tss(boot_stack);
+
     for (int i = 0; i < PG_ENT; ++i)
         pml4.ents[i] = 0;
     for (int i = 0; i < PG_STRUC_STATIC_NUM; ++i) {
         for (int j = 0; j < PG_ENT; ++j)
             pg_reserve[i].ents[j] = 0;
     }
-    identity_map(0, (uint64_t)&__loader_end__);
+
+    // identity_map(0, (uint64_t)&__loader_end__);
+    identity_map(0, 4 * PAGE_SIZE);
+    asm volatile("hlt");
     init_cpu_state();
     while (1)
         asm volatile("hlt");
