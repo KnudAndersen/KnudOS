@@ -1,3 +1,4 @@
 cross/
 build/
-lib32/*.o
+**.o
+**.BIN
