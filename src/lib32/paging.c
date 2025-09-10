@@ -5,16 +5,16 @@
 
 extern char boot_reserve[PAGE_RESERVE_SIZE] __attribute__((aligned(PAGE_SIZE)));
 extern uint64_t reserve_off;
-uint64_t boot_pml4;
+uint64_t* boot_pml4;
 
 // assumes that boot_reserve is zero-d out for performance
 void* reserve_alloc_page() {
     if (reserve_off + PAGE_SIZE > PAGE_RESERVE_SIZE) {
-        while (1)
-            asm volatile("hlt");
+        return NULL;
     }
+    void* out = (void*)(boot_reserve + reserve_off);
     reserve_off += PAGE_SIZE;
-    return (void*)(boot_reserve + reserve_off);
+    return out;
 }
 
 // walks page tables, allocates if necessary
@@ -27,10 +27,11 @@ static inline uint64_t* get_next_table(uint64_t* pte, uint64_t voff) {
         uint64_t phys_addr = *pte & ~(PAGE_SIZE - 1);
         ret = (uint64_t*)(phys_addr + voff);
     } else {
-        uint64_t* virt_page = (uint64_t*)reserve_alloc_page();
-        uint64_t phys_page = (uint64_t)((uintptr_t)virt_page - voff);
-        *pte = phys_page | PAGE_DEFAULT;
-        ret = virt_page;
+        ret = (uint64_t*)reserve_alloc_page();
+        if (ret) {
+            uint64_t phys_page = (uint64_t)((uintptr_t)ret - voff);
+            *pte = phys_page | PAGE_DEFAULT;
+        }
     }
     return ret;
 }

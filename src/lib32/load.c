@@ -1,17 +1,16 @@
 #ifndef LOAD_32_C
 #define LOAD_32_C
 
+#include "/usr/include/elf.h"
 #include "gdt.h"
 #include "paging.h"
 #include <stdint.h>
 
-#define LOAD_ERR       (1)
-#define LOAD_SUCC      (0)
-
-#define CR0_PG         (1ULL << 31)
-#define CR4_PAE        (1ULL << 5)
-#define IA32_EFER_ADDR (0xC0000080)
-#define IA32_EFER_LME  (1 << 8)
+/* x86-define */
+#define CR0_PG         (1ULL << 31) /* paging enable */
+#define CR4_PAE        (1ULL << 5)  /* physical addr extn */
+#define IA32_EFER_ADDR (0xC0000080) /* model specific register for LM*/
+#define IA32_EFER_LME  (1 << 8)     /* long mode enable */
 
 typedef struct kernel_long_jump {
     uint32_t entry;
@@ -19,22 +18,13 @@ typedef struct kernel_long_jump {
 } __attribute__((packed)) ljmp_t;
 
 extern uint32_t __loader_end__;
-extern uint64_t boot_pml4;
+extern uint64_t* boot_pml4;
 
 char boot_reserve[PAGE_RESERVE_SIZE] __attribute__((aligned(PAGE_SIZE)));
 uint64_t reserve_off;
 
-uint32_t get_ebx() {
-    uint32_t ret;
-    asm volatile("mov %0, ebx"
-                 : "=m"(ret)
-                 :
-                 : "ebx");
-    return ret;
-};
-
 uint32_t long_mode_supported() {
-    return LOAD_SUCC;
+    return 1;
 };
 extern gdtr32_t gdtr;
 
@@ -62,7 +52,7 @@ void init_cpu_state() {
                  : "eax");
     asm volatile("mov cr3, %0"
                  :
-                 : "r"(&boot_pml4)
+                 : "r"((uint32_t)(uintptr_t)boot_pml4)
                  :);
     asm volatile("mov ecx, %0\n\t"
                  "rdmsr\n\t"
@@ -82,30 +72,73 @@ void init_cpu_state() {
     return;
 }
 
-uint32_t load_kernel(void* multiboot) {
-    return LOAD_ERR;
-}
-uint64_t* test;
-uint32_t loader_main(uint32_t boot_stack) {
-    if (long_mode_supported() == LOAD_ERR) {
-        return LOAD_ERR;
+uint32_t init_loader(uint32_t stack_top_addr) {
+    if (!long_mode_supported()) {
+        return 0;
     }
-    void* mboot_paddr = (void*)(uintptr_t)get_ebx();
     init_gdt();
-    init_tss(boot_stack);
+    init_tss(stack_top_addr);
     for (int k = 0; k < PAGE_RESERVE_SIZE; k++) {
         boot_reserve[k] = 0;
     }
-    boot_pml4 = (uintptr_t)(uint64_t*)reserve_alloc_page() | PAGE_DEFAULT;
-    for (uint64_t test_page = 0; test_page < 2 * MiB; test_page += PAGE_SIZE)
-        map_memory(test_page, test_page, &boot_pml4, 0, PAGE_DEFAULT);
-    asm volatile("hlt");
+    boot_pml4 = (uint64_t*)reserve_alloc_page();
+    uint64_t page;
+    for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
+        map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
     init_cpu_state();
-    while (1)
-        asm volatile("hlt");
+    return 1;
+}
+typedef struct {
+    uint32_t flags;
+    uint32_t mem_lower;
+    uint32_t mem_upper;
+    uint32_t boot_device;
+    uint32_t cmdline;
+    uint32_t mods_count;
+    uint32_t mods_addr;
+    uint32_t syms[4];
+    uint32_t mmap_length;
+    uint32_t mmap_addr;
+} __attribute__((packed)) multiboot_info;
 
-    if (load_kernel(mboot_paddr) == LOAD_ERR) {
-        return LOAD_ERR;
+typedef struct {
+    uint32_t mod_start;
+    uint32_t mod_end;
+    uint32_t string;
+    uint32_t reserved;
+} __attribute__((packed)) multiboot_mod;
+
+multiboot_info tmp;
+multiboot_mod md;
+
+static const char string[] = "KnudKernel";
+
+uint32_t load_kernel(void* m_base) {
+    uint32_t* m_info = (uint32_t*)m_base;
+    tmp = *(multiboot_info*)m_info;
+    uint32_t num_modules = tmp.mods_count;
+    multiboot_mod* mod_iter = (multiboot_mod*)(uintptr_t)tmp.mods_addr;
+    for (uint32_t i = 0; i < num_modules; i++) {
+        md = *mod_iter;
+        uint64_t pg;
+        for (pg = md.mod_start; pg < md.mod_end; pg += PAGE_SIZE)
+            map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
+
+        __KERNEL_PANIC__;
+        mod_iter++;
+    }
+    __KERNEL_PANIC__;
+    return 0;
+}
+
+uint32_t loader_main(uint32_t boot_stack) {
+    if (!init_loader(boot_stack)) {
+        __KERNEL_PANIC__;
+    }
+    void* mboot_paddr = (void*)(uintptr_t)get_ebx();
+
+    if (!load_kernel(mboot_paddr)) {
+        __KERNEL_PANIC__;
     }
     return 0;
 }

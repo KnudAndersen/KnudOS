@@ -91,3 +91,6 @@ $(GRUB_CFG): $(LOADER_BIN) $(KERNEL_BIN)
 qemu: $(ISO)
 	qemu-system-x86_64 -m 8G -cdrom $(ISO) -gdb tcp::26000 -S
 
+qemu32: $(ISO)
+	qemu-system-i386 -m 8G -cdrom $(ISO) -gdb tcp::26000 -S
+
