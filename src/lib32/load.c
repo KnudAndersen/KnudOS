@@ -122,6 +122,7 @@ int load_elf(Elf64_Ehdr* base) {
     valid = valid && (base->e_ident[EI_MAG0] == ELFMAG0);
     valid = valid && (base->e_ident[EI_MAG1] == ELFMAG1);
     valid = valid && (base->e_ident[EI_MAG2] == ELFMAG2);
+    valid = valid && (base->e_ident[EI_MAG3] == ELFMAG3);
     Elf64_Phdr* ph = (Elf64_Phdr*)((char*)base + base->e_phoff);
     if (!valid) {
         return valid;
@@ -135,35 +136,6 @@ int load_elf(Elf64_Ehdr* base) {
             uint64_t flags = PAGE_PRESENT;
             flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
             flags |= (ph->p_flags & PF_W) ? PAGE_WRITE : 0;
-            uint64_t page_i, page_b;
-            uint64_t file_full_pages = ph->p_filesz / PAGE_SIZE;
-            uint64_t file_full_bytes = file_full_pages * PAGE_SIZE;
-            uint64_t file_partial_bytes = ph->p_filesz % PAGE_SIZE;
-            uint64_t zero_bytes = (ph->p_memsz - ph->p_filesz);
-            uint64_t zero_pages = CEIL_DIV(zero_bytes, PAGE_SIZE);
-            for (page_i = 0; page_i < file_full_pages; page_i++) {
-                page_b = page_i * PAGE_SIZE;
-                map_memory(ph->p_vaddr + page_b, (uint64_t)phys_base + page_b, boot_pml4, 0, flags);
-            }
-            if (file_partial_bytes) {
-                zero_page = reserve_alloc_page();
-                for (uint64_t k = 0; k < file_partial_bytes; k++) {
-                    ((char*)zero_page)[k] = phys_base[file_full_bytes + k];
-                }
-                page_b = file_full_pages * PAGE_SIZE;
-                map_memory(ph->p_vaddr + page_b, (uint64_t)zero_page, boot_pml4, 0, flags);
-                if (zero_bytes) {
-                    zero_bytes -= file_partial_bytes;
-                    zero_pages = CEIL_DIV(zero_bytes, PAGE_SIZE);
-                }
-            }
-            if (zero_bytes) {
-                for (page_i = 0; page_i < zero_pages; page_i++) {
-                    zero_page = reserve_alloc_page();
-                    page_b = (file_full_pages + page_i) * PAGE_SIZE;
-                    map_memory(ph->p_vaddr + page_b, (uint64_t)zero_page, boot_pml4, 0, flags);
-                }
-            }
         }
         __KERNEL_PANIC__;
         ph++;
@@ -178,14 +150,8 @@ uint32_t load_kernel(void* m_base) {
     multiboot_mod* mod_iter = (multiboot_mod*)(uintptr_t)m_info->mods_addr;
     for (uint32_t i = 0; i < m_info->mods_count; i++) {
         char* mod_str = (char*)(uintptr_t)mod_iter->string;
-        int is_kernel = 1;
-        for (int j = 0; mod_str[j] && (j < sizeof(kernel_magic)); j++) {
-            if (mod_str[j] != kernel_magic[j]) {
-                is_kernel = 0;
-                break;
-            }
-        }
-        if (is_kernel) {
+        int32_t cmp = Strcmp_N(kernel_magic, mod_str, sizeof(kernel_magic) - 1);
+        if (cmp == 0) {
             for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE)
                 map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
             load_elf((Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start);
