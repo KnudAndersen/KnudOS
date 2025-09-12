@@ -15,5 +15,6 @@
             asm volatile("hlt"); \
         }                        \
     })
+#define CEIL_DIV(a, b) (((a) + (b) - 1) / (b))
 uint32_t get_ebx();
 #endif

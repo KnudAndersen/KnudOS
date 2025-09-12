@@ -85,7 +85,10 @@ uint32_t init_loader(uint32_t stack_top_addr) {
     uint64_t page;
     for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
         map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
-    init_cpu_state();
+    // do not enter long mode until we have set up the
+    // virtual memory mapping of the kernel
+    // init_cpu_state();
+    // we will then jump to the kernel
     return 1;
 }
 typedef struct {
@@ -110,8 +113,63 @@ typedef struct {
 
 multiboot_info tmp;
 multiboot_mod md;
-
 static const char string[] = "KnudKernel";
+int valid = 1;
+/* x86 define execute disable */
+#define PAGE_EXEC_DISABLE (1ULL << 63)
+#define PAGE_WRITE        (1ULL << 1)
+int load_elf(Elf64_Ehdr* base) {
+    valid = valid && (base->e_ident[EI_MAG0] == ELFMAG0);
+    valid = valid && (base->e_ident[EI_MAG1] == ELFMAG1);
+    valid = valid && (base->e_ident[EI_MAG2] == ELFMAG2);
+    Elf64_Phdr* ph = (Elf64_Phdr*)((char*)base + base->e_phoff);
+    if (!valid) {
+        return valid;
+    }
+    for (Elf64_Half i = 0; i < base->e_phnum; i++) {
+        if (ph->p_type == PT_LOAD && ph->p_vaddr % PAGE_SIZE) {
+            __KERNEL_PANIC__;
+        } else if (ph->p_type == PT_LOAD) {
+            char* phys_base = (char*)base + ph->p_offset;
+            void* zero_page;
+            uint64_t flags = PAGE_PRESENT;
+            flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
+            flags |= (ph->p_flags & PF_W) ? PAGE_WRITE : 0;
+            uint64_t page_i, page_b;
+            uint64_t file_full_pages = ph->p_filesz / PAGE_SIZE;
+            uint64_t file_full_bytes = file_full_pages * PAGE_SIZE;
+            uint64_t file_partial_bytes = ph->p_filesz % PAGE_SIZE;
+            uint64_t zero_bytes = (ph->p_memsz - ph->p_filesz);
+            uint64_t zero_pages = CEIL_DIV(zero_bytes, PAGE_SIZE);
+            for (page_i = 0; page_i < file_full_pages; page_i++) {
+                page_b = page_i * PAGE_SIZE;
+                map_memory(ph->p_vaddr + page_b, (uint64_t)phys_base + page_b, boot_pml4, 0, flags);
+            }
+            if (file_partial_bytes) {
+                zero_page = reserve_alloc_page();
+                for (uint64_t k = 0; k < file_partial_bytes; k++) {
+                    ((char*)zero_page)[k] = phys_base[file_full_bytes + k];
+                }
+                page_b = file_full_pages * PAGE_SIZE;
+                map_memory(ph->p_vaddr + page_b, (uint64_t)zero_page, boot_pml4, 0, flags);
+                if (zero_bytes) {
+                    zero_bytes -= file_partial_bytes;
+                    zero_pages = CEIL_DIV(zero_bytes, PAGE_SIZE);
+                }
+            }
+            if (zero_bytes) {
+                for (page_i = 0; page_i < zero_pages; page_i++) {
+                    zero_page = reserve_alloc_page();
+                    page_b = (file_full_pages + page_i) * PAGE_SIZE;
+                    map_memory(ph->p_vaddr + page_b, (uint64_t)zero_page, boot_pml4, 0, flags);
+                }
+            }
+        }
+        __KERNEL_PANIC__;
+        ph++;
+    }
+    return valid;
+}
 
 uint32_t load_kernel(void* m_base) {
     uint32_t* m_info = (uint32_t*)m_base;
@@ -123,8 +181,8 @@ uint32_t load_kernel(void* m_base) {
         uint64_t pg;
         for (pg = md.mod_start; pg < md.mod_end; pg += PAGE_SIZE)
             map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
-
-        __KERNEL_PANIC__;
+        Elf64_Ehdr* eh = (Elf64_Ehdr*)(uintptr_t)md.mod_start;
+        load_elf(eh);
         mod_iter++;
     }
     __KERNEL_PANIC__;
