@@ -171,18 +171,26 @@ int load_elf(Elf64_Ehdr* base) {
     return valid;
 }
 
+static const char kernel_magic[] = "KnudKernel";
+
 uint32_t load_kernel(void* m_base) {
-    uint32_t* m_info = (uint32_t*)m_base;
-    tmp = *(multiboot_info*)m_info;
-    uint32_t num_modules = tmp.mods_count;
-    multiboot_mod* mod_iter = (multiboot_mod*)(uintptr_t)tmp.mods_addr;
-    for (uint32_t i = 0; i < num_modules; i++) {
-        md = *mod_iter;
-        uint64_t pg;
-        for (pg = md.mod_start; pg < md.mod_end; pg += PAGE_SIZE)
-            map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
-        Elf64_Ehdr* eh = (Elf64_Ehdr*)(uintptr_t)md.mod_start;
-        load_elf(eh);
+    multiboot_info* m_info = (multiboot_info*)m_base;
+    multiboot_mod* mod_iter = (multiboot_mod*)(uintptr_t)m_info->mods_addr;
+    for (uint32_t i = 0; i < m_info->mods_count; i++) {
+        char* mod_str = (char*)(uintptr_t)mod_iter->string;
+        int is_kernel = 1;
+        for (int j = 0; mod_str[j] && (j < sizeof(kernel_magic)); j++) {
+            if (mod_str[j] != kernel_magic[j]) {
+                is_kernel = 0;
+                break;
+            }
+        }
+        if (is_kernel) {
+            for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE)
+                map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
+            load_elf((Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start);
+            break;
+        }
         mod_iter++;
     }
     __KERNEL_PANIC__;
