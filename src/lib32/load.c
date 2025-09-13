@@ -83,6 +83,10 @@ uint32_t init_loader(uint32_t stack_top_addr) {
     }
     boot_pml4 = (uint64_t*)reserve_alloc_page();
     uint64_t page;
+    for (page = (uint64_t)&boot_reserve; page < (uint64_t)&boot_reserve + PAGE_RESERVE_SIZE;
+         page += PAGE_SIZE) {
+        map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
+    }
     for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
         map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
     // do not enter long mode until we have set up the
@@ -114,6 +118,7 @@ typedef struct {
 multiboot_info tmp;
 multiboot_mod md;
 static const char string[] = "KnudKernel";
+
 int valid = 1;
 /* x86 define execute disable */
 #define PAGE_EXEC_DISABLE (1ULL << 63)
@@ -122,29 +127,61 @@ int is_valid_elf(Elf64_Ehdr* base) {
     return (base->e_ident[EI_MAG0] == ELFMAG0) && (base->e_ident[EI_MAG1] == ELFMAG1) &&
         (base->e_ident[EI_MAG2] == ELFMAG2) && (base->e_ident[EI_MAG3] == ELFMAG3);
 }
-void load_elf(Elf64_Ehdr* base) {
+void Memcpy(void* dst, void* src, uint32_t n) {
+    for (uint32_t i = 0; i < n; i++) {
+        ((char*)dst)[i] = ((char*)src)[i];
+    }
+}
+uint64_t tester = 0x69;
+Elf64_Addr load_elf(Elf64_Ehdr* base) {
+    /* NOTE: assumes identity map applied to reserve memory, always true in loading*/
+    /* NOTE: assumes pages are zero initialized */
+    /* NOTE: assumes tha reserve memory is identity mapped */
     Elf64_Phdr* ph = (Elf64_Phdr*)((char*)base + base->e_phoff);
+    Elf64_Addr ret = -1;
     for (Elf64_Half i = 0; i < base->e_phnum; i++) {
         if (ph->p_type == PT_LOAD && ph->p_vaddr % PAGE_SIZE) {
             __KERNEL_PANIC__;
         } else if (ph->p_type == PT_LOAD) {
-            char* phys_base = (char*)base + ph->p_offset;
-            void* zero_page;
+            uint32_t phys_base = (uintptr_t)base + ph->p_offset;
+            void* page_alloc;
             uint64_t flags = PAGE_PRESENT;
             flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
             flags |= (ph->p_flags & PF_W) ? PAGE_WRITE : 0;
-            // TODO load kernel
+            const uint32_t num_full_pg = ph->p_filesz / PAGE_SIZE;
+            const uint32_t bytes_partial_pg = ph->p_filesz % PAGE_SIZE;
+            const uint32_t num_partial_pg = (bytes_partial_pg) ? 1 : 0;
+            const uint64_t num_zero_page = CEIL_DIV(ph->p_memsz - ph->p_filesz, PAGE_SIZE);
+            for (uint32_t j = 0; j < num_full_pg; j++) {
+                map_memory(ph->p_vaddr + j * PAGE_SIZE, phys_base + j * PAGE_SIZE, boot_pml4, 0,
+                           flags);
+            }
+            if (bytes_partial_pg) {
+                page_alloc = reserve_alloc_page();
+                Memcpy(page_alloc, (void*)(phys_base + num_full_pg * PAGE_SIZE), bytes_partial_pg);
+                map_memory(ph->p_vaddr + num_full_pg * PAGE_SIZE, (uintptr_t)page_alloc, boot_pml4,
+                           0, flags);
+            }
+
+            for (uint32_t j = 0; j < num_zero_page; j++) {
+                page_alloc = reserve_alloc_page();
+                map_memory(ph->p_vaddr + (j + num_partial_pg) * PAGE_SIZE, (uintptr_t)page_alloc,
+                           boot_pml4, 0, flags);
+            }
+            ret = base->e_entry;
+            break;
         }
-        __KERNEL_PANIC__;
         ph++;
     }
+    return ret;
 }
 
 static const char kernel_magic[] = "KnudKernel";
 
-uint32_t load_kernel(void* m_base) {
+Elf64_Addr load_kernel(void* m_base) {
     multiboot_info* m_info = (multiboot_info*)m_base;
     multiboot_mod* mod_iter = (multiboot_mod*)(uintptr_t)m_info->mods_addr;
+    Elf64_Addr ret = -1;
     uint32_t ls = 0;
     for (uint32_t i = 0; i < m_info->mods_count; i++) {
         char* mod_str = (char*)(uintptr_t)mod_iter->string;
@@ -159,25 +196,30 @@ uint32_t load_kernel(void* m_base) {
                     unmap_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
                 }
             } else {
-                load_elf((Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start);
-                return 1;
+                ret = load_elf((Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start);
+                break;
             }
         }
         mod_iter++;
     }
-    return 0;
+    return ret;
 }
+
+ljmp_t mem;
 
 uint32_t loader_main(uint32_t boot_stack) {
     if (!init_loader(boot_stack)) {
         __KERNEL_PANIC__;
     }
     void* mboot_paddr = (void*)(uintptr_t)get_ebx();
-
-    if (!load_kernel(mboot_paddr)) {
+    Elf64_Addr entry_addr;
+    if ((entry_addr = load_kernel(mboot_paddr)) == -1) {
         __KERNEL_PANIC__;
     }
-    return 0;
+    init_cpu_state();
+    mem.selector = 0x8;
+    mem.entry = (uint32_t)entry_addr;
+    return (uint32_t)(uintptr_t)&mem;
 }
 
 #endif

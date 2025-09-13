@@ -15,13 +15,15 @@ dd MB_CHECKSUM
 STACK_SIZE equ (16 * 1024)
 section .bss
 alignb 16
+alignb 16
 boot_stack_lo:
     resb STACK_SIZE
 boot_stack_hi:
 
+
 section .text
-global start
-start:
+global boot_start
+boot_start:
     mov esp, boot_stack_hi
     mov ebp, boot_stack_hi
     push boot_stack_hi
@@ -30,6 +32,8 @@ start:
     cmp eax, LOADER_ERR
     je err_loop
     ; edi=arg1, esi=arg2
+    mov edi, boot_stack_hi
+    mov esp, boot_stack_lo
     jmp far [eax]
 err_loop:
     cli

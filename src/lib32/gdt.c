@@ -2,9 +2,9 @@
 #define GDT_32_C
 #include "gdt.h"
 
-gdtr32_t gdtr;
-gdt_desc gdt[GDT_NUM_ENT];
-uint32_t tss[TSS_NUM_ENT];
+gdtr32_t gdtr __attribute__((aligned(8)));
+gdt_desc gdt[GDT_NUM_ENT] __attribute__((aligned(8)));
+uint32_t tss[TSS_NUM_ENT] __attribute__((aligned(8)));
 
 gdt_desc set_gdt_desc(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
     gdt_desc out = 0;

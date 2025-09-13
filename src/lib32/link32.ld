@@ -1,4 +1,4 @@
-ENTRY(loader_main)
+ENTRY(boot_start)
 
 SECTIONS 
 {

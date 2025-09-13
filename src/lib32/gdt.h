@@ -4,7 +4,7 @@
 #include "lib32_common.h"
 
 #define GDT_NUM_ENT         (4 + 2) // + tss
-#define GDT_ACC_PRES        (0 << 7)
+#define GDT_ACC_PRES        (1 << 7)
 #define GDT_ACC_USER        (3 << 5)
 #define GDT_ACC_CODE_DATA   (1 << 4)
 #define GDT_ACC_EXEC        (1 << 3)
