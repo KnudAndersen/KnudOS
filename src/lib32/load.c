@@ -87,7 +87,7 @@ uint32_t init_loader(uint32_t stack_top_addr) {
          page += PAGE_SIZE) {
         map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
     }
-    for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
+    for (page = 0; page < 3 * MiB; page += PAGE_SIZE)
         map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
     // do not enter long mode until we have set up the
     // virtual memory mapping of the kernel
@@ -120,9 +120,6 @@ multiboot_mod md;
 static const char string[] = "KnudKernel";
 
 int valid = 1;
-/* x86 define execute disable */
-#define PAGE_EXEC_DISABLE (1ULL << 63)
-#define PAGE_WRITE        (1ULL << 1)
 int is_valid_elf(Elf64_Ehdr* base) {
     return (base->e_ident[EI_MAG0] == ELFMAG0) && (base->e_ident[EI_MAG1] == ELFMAG1) &&
         (base->e_ident[EI_MAG2] == ELFMAG2) && (base->e_ident[EI_MAG3] == ELFMAG3);
@@ -132,7 +129,8 @@ void Memcpy(void* dst, void* src, uint32_t n) {
         ((char*)dst)[i] = ((char*)src)[i];
     }
 }
-uint64_t tester = 0x69;
+uint64_t dbg_virt;
+uint64_t dbg_phys;
 Elf64_Addr load_elf(Elf64_Ehdr* base) {
     /* NOTE: assumes identity map applied to reserve memory, always true in loading*/
     /* NOTE: assumes pages are zero initialized */
@@ -146,7 +144,7 @@ Elf64_Addr load_elf(Elf64_Ehdr* base) {
             uint32_t phys_base = (uintptr_t)base + ph->p_offset;
             void* page_alloc;
             uint64_t flags = PAGE_PRESENT;
-            flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
+            // flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
             flags |= (ph->p_flags & PF_W) ? PAGE_WRITE : 0;
             const uint32_t num_full_pg = ph->p_filesz / PAGE_SIZE;
             const uint32_t bytes_partial_pg = ph->p_filesz % PAGE_SIZE;
@@ -169,7 +167,6 @@ Elf64_Addr load_elf(Elf64_Ehdr* base) {
                            boot_pml4, 0, flags);
             }
             ret = base->e_entry;
-            break;
         }
         ph++;
     }
@@ -207,8 +204,8 @@ Elf64_Addr load_kernel(void* m_base) {
 
 ljmp_t mem;
 
-uint32_t loader_main(uint32_t boot_stack) {
-    if (!init_loader(boot_stack)) {
+uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
+    if (!init_loader(stack_top)) {
         __KERNEL_PANIC__;
     }
     void* mboot_paddr = (void*)(uintptr_t)get_ebx();
