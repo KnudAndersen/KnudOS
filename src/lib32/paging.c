@@ -36,6 +36,11 @@ static inline uint64_t* get_next_table(uint64_t* pte, uint64_t voff) {
     return ret;
 }
 
+void unmap_memory(uint64_t virt, uint64_t phys, uint64_t* pml4_vaddr, uint64_t voff,
+                  uint64_t flags) {
+    // TODO
+    return;
+}
 void map_memory(uint64_t virt, uint64_t phys, uint64_t* pml4_vaddr, uint64_t voff, uint64_t flags) {
     uint16_t pt_i = (virt >> 12) & PAGE_IDX_MASK;
     uint16_t pdt_i = (virt >> 21) & PAGE_IDX_MASK;

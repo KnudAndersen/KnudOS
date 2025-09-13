@@ -17,5 +17,6 @@
 
 void* reserve_alloc_page();
 void map_memory(uint64_t virt, uint64_t phys, uint64_t* pml4, uint64_t voff, uint64_t flags);
+void unmap_memory(uint64_t virt, uint64_t phys, uint64_t* pml4, uint64_t voff, uint64_t flags);
 
 #endif

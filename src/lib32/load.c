@@ -118,15 +118,12 @@ int valid = 1;
 /* x86 define execute disable */
 #define PAGE_EXEC_DISABLE (1ULL << 63)
 #define PAGE_WRITE        (1ULL << 1)
-int load_elf(Elf64_Ehdr* base) {
-    valid = valid && (base->e_ident[EI_MAG0] == ELFMAG0);
-    valid = valid && (base->e_ident[EI_MAG1] == ELFMAG1);
-    valid = valid && (base->e_ident[EI_MAG2] == ELFMAG2);
-    valid = valid && (base->e_ident[EI_MAG3] == ELFMAG3);
+int is_valid_elf(Elf64_Ehdr* base) {
+    return (base->e_ident[EI_MAG0] == ELFMAG0) && (base->e_ident[EI_MAG1] == ELFMAG1) &&
+        (base->e_ident[EI_MAG2] == ELFMAG2) && (base->e_ident[EI_MAG3] == ELFMAG3);
+}
+void load_elf(Elf64_Ehdr* base) {
     Elf64_Phdr* ph = (Elf64_Phdr*)((char*)base + base->e_phoff);
-    if (!valid) {
-        return valid;
-    }
     for (Elf64_Half i = 0; i < base->e_phnum; i++) {
         if (ph->p_type == PT_LOAD && ph->p_vaddr % PAGE_SIZE) {
             __KERNEL_PANIC__;
@@ -136,11 +133,11 @@ int load_elf(Elf64_Ehdr* base) {
             uint64_t flags = PAGE_PRESENT;
             flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
             flags |= (ph->p_flags & PF_W) ? PAGE_WRITE : 0;
+            // TODO load kernel
         }
         __KERNEL_PANIC__;
         ph++;
     }
-    return valid;
 }
 
 static const char kernel_magic[] = "KnudKernel";
@@ -148,18 +145,26 @@ static const char kernel_magic[] = "KnudKernel";
 uint32_t load_kernel(void* m_base) {
     multiboot_info* m_info = (multiboot_info*)m_base;
     multiboot_mod* mod_iter = (multiboot_mod*)(uintptr_t)m_info->mods_addr;
+    uint32_t ls = 0;
     for (uint32_t i = 0; i < m_info->mods_count; i++) {
         char* mod_str = (char*)(uintptr_t)mod_iter->string;
-        int32_t cmp = Strcmp_N(kernel_magic, mod_str, sizeof(kernel_magic) - 1);
-        if (cmp == 0) {
-            for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE)
+        int32_t checksum = Strcmp_N(kernel_magic, mod_str, sizeof(kernel_magic) - 1);
+        Elf64_Ehdr* bin = (Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start;
+        if (checksum == 0) {
+            for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE) {
                 map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
-            load_elf((Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start);
-            break;
+            }
+            if (!is_valid_elf(bin)) {
+                for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE) {
+                    unmap_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
+                }
+            } else {
+                load_elf((Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start);
+                return 1;
+            }
         }
         mod_iter++;
     }
-    __KERNEL_PANIC__;
     return 0;
 }
 
