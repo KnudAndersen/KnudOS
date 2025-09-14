@@ -22,9 +22,9 @@ uint32_t get_ebx();
  * If n is 0, behavior is strcmp(s_1, s_2);
  * Otherwise: returns the ASCII difference between n bytes of the strings
  * Note: there is undefined behavior if n > strlen(s_1) && n > strlen(s_2)*/
-int32_t Strcmp_N(const char* s_1, const char* s_2, uint32_t n);
+int32_t StrNCmp(const char* s_1, const char* s_2, uint32_t n);
 
 /* Returns ascii difference between two strings, terminated by '\0' */
-int32_t Strcmp(const char* s_1, const char* s_2);
+int32_t StrCmp(const char* s_1, const char* s_2);
 
 #endif

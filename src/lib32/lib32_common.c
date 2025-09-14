@@ -11,7 +11,7 @@ uint32_t get_ebx() {
     return ret;
 };
 
-int32_t Strcmp(const char* s_1, const char* s_2) {
+int32_t StrCmp(const char* s_1, const char* s_2) {
     int32_t cmp;
     while (*s_1 && *s_2) {
         cmp = *(s_1++) - *(s_2++);
@@ -21,9 +21,9 @@ int32_t Strcmp(const char* s_1, const char* s_2) {
     return *s_1 - *s_2;
 }
 
-int32_t Strcmp_N(const char* s_1, const char* s_2, uint32_t n) {
+int32_t StrNCmp(const char* s_1, const char* s_2, uint32_t n) {
     if (n == 0)
-        return Strcmp(s_1, s_2);
+        return StrCmp(s_1, s_2);
     int32_t cmp;
     for (uint32_t i = 0; i < n; i++) {
         cmp = *(s_1++) - *(s_2++);

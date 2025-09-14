@@ -1,6 +1,9 @@
 #ifndef IO_C
 #define IO_C
+
 #include "io.h"
+
+extern tty_t tty0;
 
 void kputchar(char c) {
     tty_t* term = &tty0;

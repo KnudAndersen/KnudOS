@@ -3,14 +3,9 @@
 
 #include "/usr/include/elf.h"
 #include "gdt.h"
+#include "multiboot.h"
 #include "paging.h"
 #include <stdint.h>
-
-/* x86-define */
-#define CR0_PG         (1ULL << 31) /* paging enable */
-#define CR4_PAE        (1ULL << 5)  /* physical addr extn */
-#define IA32_EFER_ADDR (0xC0000080) /* model specific register for LM*/
-#define IA32_EFER_LME  (1 << 8)     /* long mode enable */
 
 typedef struct kernel_long_jump {
     uint32_t entry;
@@ -19,14 +14,15 @@ typedef struct kernel_long_jump {
 
 extern uint32_t __loader_end__;
 extern uint64_t* boot_pml4;
+extern gdtr32_t gdtr;
 
+static const char boot_module_magic[] = "KnudKernel";
 char boot_reserve[PAGE_RESERVE_SIZE] __attribute__((aligned(PAGE_SIZE)));
 uint64_t reserve_off = 0;
 
 uint32_t long_mode_supported() {
     return 1;
 };
-extern gdtr32_t gdtr;
 
 void init_cpu_state() {
     asm volatile("lgdt [%0]"
@@ -84,35 +80,8 @@ uint32_t init_loader(uint32_t stack_top_addr) {
     uint64_t page;
     for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
         map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
-    // do not enter long mode until we have set up the
-    // virtual memory mapping of the kernel
-    // init_cpu_state();
-    // we will then jump to the kernel
     return 1;
 }
-typedef struct {
-    uint32_t flags;
-    uint32_t mem_lower;
-    uint32_t mem_upper;
-    uint32_t boot_device;
-    uint32_t cmdline;
-    uint32_t mods_count;
-    uint32_t mods_addr;
-    uint32_t syms[4];
-    uint32_t mmap_length;
-    uint32_t mmap_addr;
-} __attribute__((packed)) multiboot_info;
-
-typedef struct {
-    uint32_t mod_start;
-    uint32_t mod_end;
-    uint32_t string;
-    uint32_t reserved;
-} __attribute__((packed)) multiboot_mod;
-
-multiboot_info tmp;
-multiboot_mod md;
-static const char string[] = "KnudKernel";
 
 int valid = 1;
 int is_valid_elf(Elf64_Ehdr* base) {
@@ -124,8 +93,7 @@ void Memcpy(void* dst, void* src, uint32_t n) {
         ((char*)dst)[i] = ((char*)src)[i];
     }
 }
-uint64_t dbg_virt;
-uint64_t dbg_phys;
+
 Elf64_Addr load_elf(Elf64_Ehdr* base) {
     /* NOTE: assumes identity map applied to reserve memory, always true in loading*/
     /* NOTE: assumes pages are zero initialized */
@@ -138,9 +106,9 @@ Elf64_Addr load_elf(Elf64_Ehdr* base) {
         } else if (ph->p_type == PT_LOAD) {
             uint32_t phys_base = (uintptr_t)base + ph->p_offset;
             void* page_alloc;
-            uint64_t flags = PAGE_PRESENT | PAGE_WRITE;
-            // flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
-            // flags |= (ph->p_flags & PF_W) ? PAGE_WRITE : 0;
+            uint64_t flags = PAGE_PRESENT;
+            flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
+            flags |= (ph->p_flags & PF_W || ph->p_flags & PF_R) ? PAGE_READ_WRITE : 0;
             const uint32_t num_full_pg = ph->p_filesz / PAGE_SIZE;
             const uint32_t bytes_partial_pg = ph->p_filesz % PAGE_SIZE;
             const uint32_t num_partial_pg = (bytes_partial_pg) ? 1 : 0;
@@ -168,8 +136,6 @@ Elf64_Addr load_elf(Elf64_Ehdr* base) {
     return ret;
 }
 
-static const char kernel_magic[] = "KnudKernel";
-
 Elf64_Addr load_kernel(void* m_base) {
     multiboot_info* m_info = (multiboot_info*)m_base;
     multiboot_mod* mod_iter = (multiboot_mod*)(uintptr_t)m_info->mods_addr;
@@ -177,7 +143,7 @@ Elf64_Addr load_kernel(void* m_base) {
     uint32_t ls = 0;
     for (uint32_t i = 0; i < m_info->mods_count; i++) {
         char* mod_str = (char*)(uintptr_t)mod_iter->string;
-        int32_t checksum = Strcmp_N(kernel_magic, mod_str, sizeof(kernel_magic) - 1);
+        int32_t checksum = StrNCmp(boot_module_magic, mod_str, sizeof(boot_module_magic) - 1);
         Elf64_Ehdr* bin = (Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start;
         if (checksum == 0) {
             for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE) {
@@ -198,7 +164,6 @@ Elf64_Addr load_kernel(void* m_base) {
 }
 
 ljmp_t mem;
-extern uint32_t __tester_base__;
 uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
     if (!init_loader(stack_top)) {
         __KERNEL_PANIC__;
