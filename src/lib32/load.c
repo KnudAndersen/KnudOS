@@ -20,7 +20,7 @@ typedef struct kernel_long_jump {
 extern uint32_t __loader_end__;
 extern uint64_t* boot_pml4;
 
-char boot_reserve[PAGE_RESERVE_SIZE] __attribute__((aligned(PAGE_SIZE)));
+__attribute__((section(".boot_reserve"))) char boot_reserve[PAGE_RESERVE_SIZE];
 uint64_t reserve_off;
 
 uint32_t long_mode_supported() {
@@ -203,7 +203,7 @@ Elf64_Addr load_kernel(void* m_base) {
 }
 
 ljmp_t mem;
-
+extern uint32_t __tester_base__;
 uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
     if (!init_loader(stack_top)) {
         __KERNEL_PANIC__;
@@ -215,7 +215,7 @@ uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
     }
     init_cpu_state();
     mem.selector = 0x8;
-    mem.entry = (uint32_t)entry_addr;
+    mem.entry = (uint32_t)(uintptr_t)0x300000;
     return (uint32_t)(uintptr_t)&mem;
 }
 

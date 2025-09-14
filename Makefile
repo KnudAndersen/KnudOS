@@ -17,7 +17,7 @@ $(error 64-bit cross compiler not found for $(TARGET_64))
 endif
 
 CFLAGS_32:=-Wall -Wextra -ffreestanding -fno-pic -fno-pie -masm=intel -gdwarf-4
-CFLAGS_64:=-Wall -Wextra -ffreestanding -fno-pic -fno-pie -masm=intel -gdwarf-4
+CFLAGS_64:=-mcmodel=large -Wall -Wextra -ffreestanding -fno-pic -fno-pie -masm=intel -gdwarf-4
 
 LINK_32:=$(CC_32)
 LINK_64:=$(CC_64)
@@ -27,7 +27,7 @@ LINK_SCRIPT_32=$(LIB_32)/link32.ld
 LINK_SCRIPT_64=$(LIB_64)/link64.ld
 
 ASM_32:=/usr/bin/nasm
-ASM_64:=$(ASM_64)
+ASM_64:=$(ASM_32)
 AFLAGS_32:=-felf32 -F dwarf -g
 AFLAGS_64:=-felf64 -F dwarf -g
 

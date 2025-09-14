@@ -1,10 +1,26 @@
 ENTRY(kernel_main)
 
+VIRT = 0x800000000000;
+PHYS = 0x300000;
+
 SECTIONS {
-    . = 3M;
-    .text ALIGN (4K) : { *(*.text*) }
-    .rodata ALIGN (4K): { *(*.rodata*) }
-    .data ALIGN (4K): { *(*.data*) }
-    .bss ALIGN (4K): { *(*.bss*) }
+    . = 
+    .cba ALIGN (0x1000) : {
+        *(*.cba)
+    }
+    . = VIRT + PHYS;
+    .text ALIGN (0x1000) : AT(ADDR(.text) - VIRT) { 
+       *(*.text) 
+    }
+    .rodata ALIGN (0x1000) : AT(ADDR(.rodata)-VIRT) { 
+       *(*.rodata) 
+    }
+    .data ALIGN (0x1000) : AT(ADDR(.data)-VIRT) { 
+       *(*.data) 
+    }
+    .bss ALIGN (0x1000) : AT(ADDR(.bss)-VIRT) { 
+       *(*.bss) 
+       *(*.COMMON)
+    }
 }
 
