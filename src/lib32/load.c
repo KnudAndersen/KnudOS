@@ -20,8 +20,8 @@ typedef struct kernel_long_jump {
 extern uint32_t __loader_end__;
 extern uint64_t* boot_pml4;
 
-__attribute__((section(".boot_reserve"))) char boot_reserve[PAGE_RESERVE_SIZE];
-uint64_t reserve_off;
+char boot_reserve[PAGE_RESERVE_SIZE] __attribute__((aligned(PAGE_SIZE)));
+uint64_t reserve_off = 0;
 
 uint32_t long_mode_supported() {
     return 1;
@@ -71,7 +71,6 @@ void init_cpu_state() {
                  : "eax");
     return;
 }
-
 uint32_t init_loader(uint32_t stack_top_addr) {
     if (!long_mode_supported()) {
         return 0;
@@ -83,11 +82,7 @@ uint32_t init_loader(uint32_t stack_top_addr) {
     }
     boot_pml4 = (uint64_t*)reserve_alloc_page();
     uint64_t page;
-    for (page = (uint64_t)&boot_reserve; page < (uint64_t)&boot_reserve + PAGE_RESERVE_SIZE;
-         page += PAGE_SIZE) {
-        map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
-    }
-    for (page = 0; page < 3 * MiB; page += PAGE_SIZE)
+    for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
         map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
     // do not enter long mode until we have set up the
     // virtual memory mapping of the kernel
@@ -143,9 +138,9 @@ Elf64_Addr load_elf(Elf64_Ehdr* base) {
         } else if (ph->p_type == PT_LOAD) {
             uint32_t phys_base = (uintptr_t)base + ph->p_offset;
             void* page_alloc;
-            uint64_t flags = PAGE_PRESENT;
+            uint64_t flags = PAGE_PRESENT | PAGE_WRITE;
             // flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
-            flags |= (ph->p_flags & PF_W) ? PAGE_WRITE : 0;
+            // flags |= (ph->p_flags & PF_W) ? PAGE_WRITE : 0;
             const uint32_t num_full_pg = ph->p_filesz / PAGE_SIZE;
             const uint32_t bytes_partial_pg = ph->p_filesz % PAGE_SIZE;
             const uint32_t num_partial_pg = (bytes_partial_pg) ? 1 : 0;
@@ -215,7 +210,7 @@ uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
     }
     init_cpu_state();
     mem.selector = 0x8;
-    mem.entry = (uint32_t)(uintptr_t)0x300000;
+    mem.entry = (uint32_t)(uintptr_t)0x300000 - 0x1000;
     return (uint32_t)(uintptr_t)&mem;
 }
 

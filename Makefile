@@ -44,9 +44,11 @@ ISO:=$(BUILD)/knud_os.iso
 ISO_DIR:=$(BUILD)/iso
 GRUB_CFG:=$(ISO_DIR)/boot/grub/grub.cfg
 
-.PHONY: all iso clean qemu
+.PHONY: all iso bin clean qemu
 
-all: iso
+all: bin iso
+bin: $(LOADER_BIN) $(KERNEL_BIN)
+iso: bin $(ISO)
 
 $(LOADER_BIN): $(OBJ_32) $(LINK_SCRIPT_32) 
 	$(LINK_32) $(LFLAGS_32) -T $(LINK_SCRIPT_32) $(OBJ_32) -o $@ -lgcc
@@ -72,8 +74,6 @@ $(BUILD)/%.asm.64.o: %.asm
 
 clean:
 	rm -rf $(BUILD)
-
-iso: $(ISO)
 
 $(ISO): $(GRUB_CFG) $(LOADER_BIN) $(KERNEL_BIN)
 	mkdir -p $(ISO_DIR)/boot/grub

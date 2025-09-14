@@ -3,7 +3,7 @@
 
 #include "paging.h"
 
-extern void* boot_reserve;
+extern char boot_reserve[];
 extern uint64_t reserve_off;
 uint64_t* boot_pml4;
 
@@ -44,33 +44,16 @@ void unmap_memory(uint64_t virt, uint64_t phys, uint64_t* pml4_vaddr, uint64_t v
     // TODO
     return;
 }
-typedef struct {
-    uint16_t pt_i;
-    uint16_t pdt_i;
-    uint16_t pdtp_i;
-    uint16_t pml4_i;
-    uint64_t *pdtp, *pdt, *pt;
-} mem_test;
-mem_test mt;
+
 void map_memory(uint64_t virt, uint64_t phys, uint64_t* pml4_vaddr, uint64_t voff, uint64_t flags) {
     uint16_t pt_i = (virt >> 12) & PAGE_IDX_MASK;
     uint16_t pdt_i = (virt >> 21) & PAGE_IDX_MASK;
     uint16_t pdtp_i = (virt >> 30) & PAGE_IDX_MASK;
     uint16_t pml4_i = (virt >> 39) & PAGE_IDX_MASK;
     uint64_t *pdtp, *pdt, *pt;
-    pdtp = get_next_table(&pml4_vaddr[pml4_i], voff);
-    pdt = get_next_table(&pdtp[pdtp_i], voff);
-    pt = get_next_table(&pdt[pdt_i], voff);
+    pdtp = get_next_table(&(pml4_vaddr[pml4_i]), voff);
+    pdt = get_next_table(&(pdtp[pdtp_i]), voff);
+    pt = get_next_table(&(pdt[pdt_i]), voff);
     pt[pt_i] = phys | flags;
-    if (virt == 0x800000301000) {
-        mt.pt_i = pt_i;
-        mt.pdt_i = pdt_i;
-        mt.pdtp_i = pdtp_i;
-        mt.pml4_i = pml4_i;
-        mt.pdtp = pdtp;
-        mt.pdt = pdt;
-        mt.pt = pt;
-        __KERNEL_PANIC__;
-    }
 }
 #endif
