@@ -2,8 +2,15 @@
 #define TTY_C
 
 #include "tty.h"
+#include "io.h"
+
+static inline void set_start_message(tty_t* tty, uint8_t id) {
+    kprints("[TTY] Initialized tty\n");
+}
 
 void tty_init(tty_t* tty, uint16_t rows, uint16_t cols, uint16_t fg, uint16_t bg) {
+    static uint8_t tty_id = 0;
+    tty_id++;
     tty->rows = rows;
     tty->cols = cols;
     tty->default_bg = bg;
@@ -12,6 +19,7 @@ void tty_init(tty_t* tty, uint16_t rows, uint16_t cols, uint16_t fg, uint16_t bg
     rows *= cols;
     for (uint32_t i = 0; i < rows; i++)
         *((uint16_t*)(tty->data) + i) = vga_get_attr(' ', fg, bg);
+    set_start_message(tty, tty_id);
 }
 
 void vga_tty_render(tty_t* tty) {
