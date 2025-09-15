@@ -1,6 +1,5 @@
 ENTRY(boot_start)
 
-
 SECTIONS 
 {
     . = 1M;

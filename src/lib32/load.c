@@ -15,6 +15,7 @@ typedef struct kernel_long_jump {
 extern uint32_t __loader_end__;
 extern uint64_t* boot_pml4;
 extern gdtr32_t gdtr;
+extern gdt_desc gdt[GDT_NUM_ENT] __attribute__((aligned(8)));
 
 static const char boot_module_magic[] = "KnudKernel";
 char boot_reserve[PAGE_RESERVE_SIZE] __attribute__((aligned(PAGE_SIZE)));
@@ -99,16 +100,16 @@ Elf64_Addr load_elf(Elf64_Ehdr* base) {
     /* NOTE: assumes pages are zero initialized */
     /* NOTE: assumes tha reserve memory is identity mapped */
     Elf64_Phdr* ph = (Elf64_Phdr*)((char*)base + base->e_phoff);
-    Elf64_Addr ret = -1;
     for (Elf64_Half i = 0; i < base->e_phnum; i++) {
-        if (ph->p_type == PT_LOAD && ph->p_vaddr % PAGE_SIZE) {
+        if (ph->p_type == PT_LOAD && (ph->p_vaddr % PAGE_SIZE)) {
             __KERNEL_PANIC__;
         } else if (ph->p_type == PT_LOAD) {
             uint32_t phys_base = (uintptr_t)base + ph->p_offset;
             void* page_alloc;
             uint64_t flags = PAGE_PRESENT;
-            flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
-            flags |= (ph->p_flags & PF_W || ph->p_flags & PF_R) ? PAGE_READ_WRITE : 0;
+            /* TODO: fix execute disable. needs to be set in MSR */
+            // flags |= (ph->p_flags & PF_X) ? 0 : PAGE_EXEC_DISABLE;
+            flags |= ((ph->p_flags & PF_W) || (ph->p_flags & PF_R)) ? PAGE_READ_WRITE : 0;
             const uint32_t num_full_pg = ph->p_filesz / PAGE_SIZE;
             const uint32_t bytes_partial_pg = ph->p_filesz % PAGE_SIZE;
             const uint32_t num_partial_pg = (bytes_partial_pg) ? 1 : 0;
@@ -123,38 +124,39 @@ Elf64_Addr load_elf(Elf64_Ehdr* base) {
                 map_memory(ph->p_vaddr + num_full_pg * PAGE_SIZE, (uintptr_t)page_alloc, boot_pml4,
                            0, flags);
             }
-
             for (uint32_t j = 0; j < num_zero_page; j++) {
                 page_alloc = reserve_alloc_page();
                 map_memory(ph->p_vaddr + (j + num_partial_pg) * PAGE_SIZE, (uintptr_t)page_alloc,
                            boot_pml4, 0, flags);
-            }
-            ret = base->e_entry;
+            };
         }
         ph++;
     }
-    return ret;
+    return base->e_entry;
 }
 
+#define KERNEL_INVALID_ENTRY (-1)
 Elf64_Addr load_kernel(void* m_base) {
     multiboot_info* m_info = (multiboot_info*)m_base;
     multiboot_mod* mod_iter = (multiboot_mod*)(uintptr_t)m_info->mods_addr;
-    Elf64_Addr ret = -1;
-    uint32_t ls = 0;
+    Elf64_Addr ret = KERNEL_INVALID_ENTRY;
+    Elf64_Ehdr* bin;
+    int32_t checksum;
     for (uint32_t i = 0; i < m_info->mods_count; i++) {
         char* mod_str = (char*)(uintptr_t)mod_iter->string;
-        int32_t checksum = StrNCmp(boot_module_magic, mod_str, sizeof(boot_module_magic) - 1);
-        Elf64_Ehdr* bin = (Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start;
+        checksum = StrNCmp(boot_module_magic, mod_str, sizeof(boot_module_magic) - 1);
         if (checksum == 0) {
             for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE) {
                 map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
             }
+            bin = (Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start;
             if (!is_valid_elf(bin)) {
                 for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE) {
+                    // TODO
                     unmap_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
                 }
             } else {
-                ret = load_elf((Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start);
+                ret = load_elf(bin);
                 break;
             }
         }
@@ -170,12 +172,12 @@ uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
     }
     void* mboot_paddr = (void*)(uintptr_t)get_ebx();
     Elf64_Addr entry_addr;
-    if ((entry_addr = load_kernel(mboot_paddr)) == -1) {
+    if ((entry_addr = load_kernel(mboot_paddr)) == KERNEL_INVALID_ENTRY) {
         __KERNEL_PANIC__;
     }
     init_cpu_state();
-    mem.selector = 0x8;
-    mem.entry = (uint32_t)(uintptr_t)0x300000 - 0x1000;
+    mem.selector = GDT_KERN_CODE * sizeof(*gdt);
+    mem.entry = (uint32_t)entry_addr;
     return (uint32_t)(uintptr_t)&mem;
 }
 
