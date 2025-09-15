@@ -9,7 +9,12 @@
 tty_t tty0 = (tty_t){0};
 void init_kernel() {
     /* TODO:
-     * kstack, vmm/kheap, formatted io/logging
+     * map kstack
+     * pass down multiboot info from boostrap
+     * initialize pmm accounting for all in-use pages (use multiboot mmap)
+     * set up paging again using the pmm and HHDM
+     * vmm/kheap
+     * formatted io/logging
      */
     tty_init(&tty0, VGA_ROWS_MAX, VGA_COLS_MAX, TTY_DEFAULT_FG, TTY_DEFAULT_BG);
     vga_tty_render(&tty0);
