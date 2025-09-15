@@ -10,6 +10,7 @@ tty_t tty0 = (tty_t){0};
 void init_kernel() {
     /* TODO:
      * map kstack
+     * map ACPI region and other MMIO like APIC
      * pass down multiboot info from boostrap
      * initialize pmm accounting for all in-use pages (use multiboot mmap)
      * set up paging again using the pmm and HHDM

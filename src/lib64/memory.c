@@ -6,6 +6,14 @@
  * physical memory manager
  * ----------------------------------------- */
 uint64_t pmm_bitmap[PMM_ROWS] = {0};
+
+void pmm_init(multiboot_info* mb) {
+    // TODO: loop through mb->mmap and mark reserved physical
+    // pages as such.
+    // TODO: mark first 3MiB of memory as reserved.
+    // TODO: mark physical addresses like APIC as reserved
+}
+
 static inline void pmm_set_used(uint32_t i, uint32_t j) {
     pmm_bitmap[j] |= (1 << (PMM_COLS - 1 - i));
 }
