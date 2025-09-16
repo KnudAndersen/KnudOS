@@ -16,12 +16,12 @@ inline void tprintc(tty_t* term, char c) {
             kprintc(' ');
         return;
     }
-    if (term->col_i == term->cols || c == '\n') {
-        term->col_i = 0;
+    if (term->col_i == term->cols - 1 || c == '\n') {
+        term->col_i = 1;
         term->row_i++;
-        if (term->row_i == term->rows) {
+        if (term->row_i == term->rows - 1) {
             tty_scroll(term, TTY_SCROLL_UP, 1);
-            term->row_i = term->rows - 1;
+            term->row_i = term->rows - 2;
         }
     }
     if (c != '\n' && c != '\t') {

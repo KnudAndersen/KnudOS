@@ -9,7 +9,7 @@
 #define PAGE_OFF_MASK     (0xFFFULL)
 #define PAGE_IDX_MASK     (0x1FFULL)
 /* size of bootstrap reserve memory segment*/
-#define PAGE_RESERVE_SIZE (16 * 4 * KiB)
+#define PAGE_RESERVE_SIZE (20 * 4 * KiB)
 /* page table entry flags */
 #define PAGE_PRESENT      (1ULL << 0)
 #define PAGE_EXEC_DISABLE (1ULL << 63)
