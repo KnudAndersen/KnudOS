@@ -1,6 +1,6 @@
 #ifndef MEMORY_C
 #define MEMORY_C
-#include "memory.h"
+#include "./include/memory.h"
 
 /* -----------------------------------------
  * physical memory manager

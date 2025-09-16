@@ -1,12 +1,13 @@
 #ifndef KERNEL_C
 #define KERNEL_C
 
-#include "io.h"
-#include "lib64_common.h"
-#include "tty.h"
-#include "vga.h"
+#include "./lib/include/io.h"
+#include "./lib/include/kcommon.h"
+#include "./lib/include/tty.h"
+#include "./lib/include/vga.h"
 
 tty_t tty0 = (tty_t){0};
+tty_t tty1 = (tty_t){0};
 void init_kernel() {
     /* TODO:
      * map kstack
@@ -17,12 +18,15 @@ void init_kernel() {
      * vmm/kheap
      * formatted io/logging
      */
-    tty_init(&tty0, VGA_ROWS_MAX, VGA_COLS_MAX, TTY_DEFAULT_FG, TTY_DEFAULT_BG);
+    tty_init(&tty0, VGA_ROWS_MAX / 2, VGA_COLS_MAX / 2, TTY_DEFAULT_FG, TTY_DEFAULT_BG, 0, 0);
+    // tty_init(&tty1, VGA_ROWS_MAX / 2, VGA_COLS_MAX / 2, TTY_DEFAULT_FG, TTY_DEFAULT_BG,
+    //        VGA_ROWS_MAX / 2, VGA_COLS_MAX / 2);
     vga_tty_render(&tty0);
 }
 void kernel_main(uint32_t stack_lo, uint32_t stack_hi) {
     init_kernel();
     kprints("hello world");
+    tprints(&tty1, "whats up");
     while (1) {
         asm volatile("hlt");
     }

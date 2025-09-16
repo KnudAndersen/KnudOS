@@ -1,7 +1,7 @@
 #ifndef PAGING_32_H
 #define PAGING_32_H
 
-#include "lib32_common.h"
+#include "common_32.h"
 
 /*fixed x86-defined constants*/
 #define PAGE_SIZE         (4ULL * KiB)

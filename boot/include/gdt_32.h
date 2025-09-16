@@ -1,7 +1,7 @@
 #ifndef GDT_32_H
 #define GDT_32_H
 
-#include "lib32_common.h"
+#include "common_32.h"
 
 #define GDT_NUM_ENT         (4 + 2) // + tss
 #define GDT_ACC_PRES        (1 << 7)

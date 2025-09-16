@@ -1,8 +1,8 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "../common/multiboot.h"
-#include "lib64_common.h"
+#include "../../common/include/multiboot.h"
+#include "kcommon.h"
 
 #define PMM_ROWS (8)
 #define PMM_COLS (64)

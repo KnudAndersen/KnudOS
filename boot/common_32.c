@@ -1,6 +1,7 @@
-#ifndef LIB32_COMMON_C
-#define LIB32_COMMON_C
-#include "lib32_common.h"
+#ifndef COMMON_32_C
+#define COMMON_32_C
+
+#include "./include/common_32.h"
 
 uint32_t get_ebx() {
     uint32_t ret;

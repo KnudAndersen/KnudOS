@@ -1,7 +1,7 @@
 #ifndef GDT_32_C
 #define GDT_32_C
 
-#include "gdt.h"
+#include "./include/gdt_32.h"
 
 gdtr32_t gdtr __attribute__((aligned(8)));
 gdt_desc gdt[GDT_NUM_ENT] __attribute__((aligned(8)));

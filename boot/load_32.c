@@ -1,11 +1,10 @@
 #ifndef LOAD_32_C
 #define LOAD_32_C
 
-#include "/usr/include/elf.h"
-#include "gdt.h"
-#include "multiboot.h"
-#include "paging.h"
-#include <stdint.h>
+#include "../src/common/include/elf.h"
+#include "../src/common/include/multiboot.h"
+#include "./include/gdt_32.h"
+#include "./include/paging_32.h"
 
 typedef struct kernel_long_jump {
     uint32_t entry;

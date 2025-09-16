@@ -2,9 +2,8 @@ TARGET_32:=i686-elf
 TARGET_64:=x86_64-elf
 
 CROSS_DIR:=./cross
-SRC=./src
-LIB_32=$(SRC)/lib32
-LIB_64=$(SRC)/lib64
+LIB_32=./boot
+LIB_64=./src
 BUILD:=./build
 
 CC_32:=$(shell find $(CROSS_DIR) -name '$(TARGET_32)-gcc')
@@ -23,10 +22,10 @@ LINK_32:=$(CC_32)
 LINK_64:=$(CC_64)
 LFLAGS_32:=-ffreestanding -nostdlib -static -lgcc
 LFLAGS_64:=-ffreestanding -nostdlib -static -lgcc
-LINK_SCRIPT_32=$(LIB_32)/link32.ld
-LINK_SCRIPT_64=$(LIB_64)/link64.ld
+LINK_SCRIPT_32=$(LIB_32)/link_32.ld
+LINK_SCRIPT_64=$(LIB_64)/klink.ld
 
-ASM_32:=/usr/bin/nasm
+ASM_32:=nasm
 ASM_64:=$(ASM_32)
 AFLAGS_32:=-felf32 -F dwarf -g
 AFLAGS_64:=-felf64 -F dwarf -g

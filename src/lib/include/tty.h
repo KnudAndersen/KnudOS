@@ -1,7 +1,7 @@
 #ifndef TTY_H
 #define TTY_H
 
-#include "lib64_common.h"
+#include "kcommon.h"
 #include "vga.h"
 
 #define TTY_DEFAULT_FG (VGA_COLOR_RED)
@@ -10,6 +10,8 @@
 #define TTY_TAB_WIDTH  (4)
 
 typedef struct virtual_terminal {
+    uint16_t x;
+    uint16_t y;
     uint16_t rows;
     uint16_t cols;
     uint16_t default_fg;
@@ -22,5 +24,6 @@ typedef struct virtual_terminal {
 extern volatile uint16_t* vga_text_mmio;
 void vga_tty_render(tty_t* tty);
 void tty_scroll(tty_t* t, uint32_t dir, uint32_t n);
-void tty_init(tty_t* tty, uint16_t rows, uint16_t cols, uint16_t fg, uint16_t bg);
+void tty_init(tty_t* tty, uint16_t rows, uint16_t cols, uint16_t fg, uint16_t bg, uint16_t x,
+              uint16_t y);
 #endif

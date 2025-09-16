@@ -1,7 +1,7 @@
 #ifndef PAGING_32_C
 #define PAGING_32_C
 
-#include "paging.h"
+#include "./include/paging_32.h"
 
 extern char boot_reserve[];
 extern uint64_t reserve_off;

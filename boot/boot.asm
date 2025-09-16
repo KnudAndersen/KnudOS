@@ -1,4 +1,5 @@
 bits 32
+
 MB_PG_ALIGN equ (1 << 0)
 MB_MMAP equ (1 << 1)
 MB_MAGIC equ 0x1BADB002

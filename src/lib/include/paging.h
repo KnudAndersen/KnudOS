@@ -1,7 +1,7 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include "lib64_common.h"
+#include "kcommon.h"
 
 /*fixed x86-defined constants*/
 #define PAGE_ENTS         (512ULL)

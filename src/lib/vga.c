@@ -1,7 +1,7 @@
 #ifndef VGA_C
 #define VGA_C
 
-#include "vga.h"
+#include "./include/vga.h"
 
 volatile uint16_t* vga_text_mmio = (volatile uint16_t*)0xB8000;
 

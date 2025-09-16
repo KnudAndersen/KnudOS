@@ -1,7 +1,7 @@
 #ifndef VGA_H
 #define VGA_H
 
-#include "lib64_common.h"
+#include "kcommon.h"
 
 #define VGA_BG_MASK   (0x7000)
 #define VGA_FG_MASK   (0x0F00)

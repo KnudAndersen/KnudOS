@@ -1,8 +1,8 @@
 #ifndef PAGING_C
 #define PAGING_C
 
-#include "paging.h"
-#include "memory.h"
+#include "./include/paging.h"
+#include "./include/memory.h"
 
 void map_memory(uint64_t virt, uint64_t phys, uint64_t* pml4, uint64_t voff, uint64_t flags) {
     uint16_t page_off = ((virt >> 0) & 0xFFF);

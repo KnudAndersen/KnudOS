@@ -1,5 +1,5 @@
-#ifndef LIB32_COMMON_H
-#define LIB32_COMMON_H
+#ifndef COMMON_32_H
+#define COMMON_32_H
 
 #include <stdint.h>
 
