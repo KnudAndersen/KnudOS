@@ -3,11 +3,11 @@
 
 #include "./lib/include/io.h"
 #include "./lib/include/kcommon.h"
+#include "./lib/include/memory.h"
 #include "./lib/include/tty.h"
 #include "./lib/include/vga.h"
 
 tty_t tty0 = (tty_t){0};
-tty_t tty1 = (tty_t){0};
 void init_kernel() {
     /* TODO:
      * map kstack
@@ -19,17 +19,11 @@ void init_kernel() {
      * formatted io/logging
      */
     tty_init(&tty0, VGA_ROWS_MAX, VGA_COLS_MAX / 2, TTY_DEFAULT_FG, TTY_DEFAULT_BG, 0, 0);
-    tty_init(&tty1, VGA_ROWS_MAX, VGA_COLS_MAX / 2, TTY_DEFAULT_FG, TTY_DEFAULT_BG,
-             VGA_COLS_MAX / 2, 0);
     vga_tty_render(&tty0);
-    vga_tty_render(&tty1);
 }
-void kernel_main(uint32_t stack_lo, uint32_t stack_hi) {
+void kernel_main(uint32_t multiboot, uint32_t stack_hi) {
     init_kernel();
-    uint32_t i = 0;
-    kprints("hello world\n");
-    kprints("hello world\n");
-    tprints(&tty1, "this tty1");
+    pmm_init((multiboot_info*)(uintptr_t)multiboot);
     while (1) {
         asm volatile("hlt");
     }

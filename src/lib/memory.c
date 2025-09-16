@@ -7,11 +7,24 @@
  * ----------------------------------------- */
 uint64_t pmm_bitmap[PMM_ROWS] = {0};
 
+typedef struct multiboot_mmap_ent {
+    uint32_t size;
+    uint64_t base_addr;
+    uint64_t length;
+    uint32_t type;
+} __attribute__((packed)) mb_mmap_ent;
+
 void pmm_init(multiboot_info* mb) {
     // TODO: loop through mb->mmap and mark reserved physical
     // pages as such.
     // TODO: mark first 3MiB of memory as reserved.
     // TODO: mark physical addresses like APIC as reserved
+    char* base = (char*)(uintptr_t)mb->mmap_addr;
+    mb_mmap_ent* iter = (mb_mmap_ent*)base;
+    uint32_t i = 0;
+    while (iter) {
+        iter = (mb_mmap_ent*)(base + iter->size);
+    }
 }
 
 static inline void pmm_set_used(uint32_t i, uint32_t j) {

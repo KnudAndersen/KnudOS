@@ -21,6 +21,7 @@ char boot_reserve[PAGE_RESERVE_SIZE] __attribute__((aligned(PAGE_SIZE)));
 uint64_t reserve_off = 0;
 
 uint32_t long_mode_supported() {
+    // TODO copy code from archive
     return 1;
 };
 

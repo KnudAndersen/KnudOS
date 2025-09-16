@@ -20,6 +20,8 @@ alignb 16
 boot_stack_lo:
     resb STACK_SIZE
 boot_stack_hi:
+multiboot_addr:
+    resb 4
 
 
 section .text
@@ -34,7 +36,7 @@ boot_start:
     je err_loop
     ; edi=arg1, esi=arg2
     mov edi, boot_stack_hi
-    mov esp, boot_stack_lo
+    mov esi, multiboot_addr
     jmp far [eax]
 err_loop:
     cli
