@@ -5,7 +5,7 @@
 
 extern tty_t tty0;
 
-inline void tprintc(tty_t* term, char c) {
+inline void tbufferc(tty_t* term, char c) {
     if (term == 0) {
         while (1) {
             asm volatile("hlt");
@@ -27,10 +27,20 @@ inline void tprintc(tty_t* term, char c) {
     if (c != '\n' && c != '\t') {
         term->data[term->row_i][term->col_i++] =
             vga_get_attr(c, term->default_fg, term->default_bg);
-        vga_tty_render(&tty0);
     }
 }
 
+void tprintc(tty_t* term, char c) {
+    tbufferc(term, c);
+    vga_tty_render(term);
+}
+void tbuffers(tty_t* term, const char* const str) {
+    uint32_t i = 0;
+    while (str[i]) {
+        tbufferc(term, str[i]);
+        i++;
+    }
+}
 void kprintc(char c) {
     tprintc(&tty0, c);
 }
@@ -42,15 +52,13 @@ void kprints(char* str) {
     }
 }
 void tprints(tty_t* term, char* str) {
-    uint32_t i = 0;
-    while (str[i]) {
-        tprintc(term, str[i]);
-        i++;
-    }
+    tbuffers(term, str);
+    vga_tty_render(term);
 }
-static inline void tprint_dec(tty_t* term, uint64_t val, uint8_t shift, uint8_t mod, uint8_t size) {
+static inline void tbuffer_dec(tty_t* term, uint64_t val, uint8_t shift, uint8_t mod,
+                               uint8_t size) {
     if (val == 0) {
-        kprints("0");
+        tbufferc(term, '0');
         return;
     }
     char out[2 * size + 1];
@@ -61,9 +69,16 @@ static inline void tprint_dec(tty_t* term, uint64_t val, uint8_t shift, uint8_t 
         i--;
         val /= shift;
     }
-    tprints(term, out + (i + 1));
+    tbuffers(term, out + (i + 1));
 }
-
+static inline void tprint_dec(tty_t* term, uint64_t val, uint8_t shift, uint8_t mod, uint8_t size) {
+    if (val == 0) {
+        kprints("0");
+        return;
+    }
+    tbuffer_dec(term, val, shift, mod, size);
+    vga_tty_render(term);
+}
 static inline void tprint_pow2(tty_t* term, uint64_t val, uint8_t shift, uint8_t mod,
                                uint8_t size) {
     if (val == 0) {
@@ -109,8 +124,12 @@ void tprintb(tty_t* term, uint8_t val) {
     tprint_dec(term, val, DECMOD, DECMOD, sizeof(val));
 }
 
+void tbufferd(tty_t* term, uint32_t val) {
+    tbuffer_dec(term, val, DECMOD, DECMOD, sizeof(val));
+}
 void tprintd(tty_t* term, uint32_t val) {
-    tprint_dec(term, val, DECMOD, DECMOD, sizeof(val));
+    tbuffer_dec(term, val, DECMOD, DECMOD, sizeof(val));
+    vga_tty_render(term);
 }
 
 void tprintl(tty_t* term, uint64_t val) {

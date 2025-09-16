@@ -23,6 +23,9 @@ void tty_init(tty_t* tty, uint16_t rows, uint16_t cols, uint16_t fg, uint16_t bg
         tty->data[0][i] = vga_get_attr('-', fg, bg);
         tty->data[rows - 1][i] = vga_get_attr('-', fg, bg);
     }
+    tbuffers(tty, start_msg);
+    tbufferd(tty, tty_id);
+    tbufferc(tty, '\n');
     ++tty_id;
 }
 
