@@ -3,7 +3,7 @@
 1) GRUB support through Multiboot (ver. 1) compliance.
 2) 32-bit boot stub and library to setup initialize processor state for 64-bit long mode.
 3) ELF binary loader to set up 64-bit binaries.
-4) VGA text mode graphics library supporting multiple TTY windows displaying at once.
+4) VGA text mode graphics library supporting multiple TTY instances displaying at once with standard I/O.
 5) Virtual and physical memory managers and kernel/user space fine-grained dynamic allocators.
 
 Existing in archives (...being conjured...):
@@ -12,6 +12,7 @@ Existing in archives (...being conjured...):
 
 ## Requirements
 1) A (modern) virtual machine for ``x86_64``. Needs to emulate BIOS firmware and have 1GiB of memory. (If you have ``qemu-system-x86_64``, then there is recipe in the ``Makefile`` to launch and wait for GDB.)
+
 
 
 
