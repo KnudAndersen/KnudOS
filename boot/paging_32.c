@@ -2,6 +2,7 @@
 #define PAGING_32_C
 
 #include "./include/paging_32.h"
+#include "../src/common/include/gsyms.h"
 
 extern char boot_reserve[];
 extern uint64_t reserve_off;
@@ -9,7 +10,7 @@ uint64_t* boot_pml4;
 
 // assumes that boot_reserve is zero-d out for performance
 void* reserve_alloc_page() {
-    if (reserve_off + PAGE_SIZE > PAGE_RESERVE_SIZE) {
+    if (reserve_off + PAGE_SIZE > __BOOT_RESERVE_SIZE__) {
         while (1) {
             asm volatile("hlt");
         }

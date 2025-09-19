@@ -9,6 +9,7 @@ SECTIONS {
         *(*.kernel_entry)
     }
     . = VIRT + PHYS + 0x1000;
+    __kernel_start = .;
     .text ALIGN (0x1000) : { 
        *(*.text) 
     }
@@ -22,5 +23,6 @@ SECTIONS {
        *(*.bss) 
        *(*.COMMON)
     }
+    __kernel_end = .;
 }
 

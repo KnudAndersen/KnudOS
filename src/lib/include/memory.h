@@ -5,7 +5,7 @@
 #include "kcommon.h"
 
 #define PMM_ROWS (8)
-#define PMM_COLS (64)
+#define PMM_COLS (128)
 
 void pmm_init(multiboot_info* mb);
 void pmm_free(const uint64_t addr);

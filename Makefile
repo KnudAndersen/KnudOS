@@ -2,6 +2,7 @@ TARGET_32:=i686-elf
 TARGET_64:=x86_64-elf
 
 CROSS_DIR:=./cross
+LIB_COMMON=./src/common
 LIB_32=./boot
 LIB_64=./src
 BUILD:=./build
@@ -30,10 +31,10 @@ ASM_64:=$(ASM_32)
 AFLAGS_32:=-felf32 -F dwarf -g
 AFLAGS_64:=-felf64 -F dwarf -g
 
-SRC_32:=$(shell find $(LIB_32) -name '*.c' -or -name '*.asm')
+SRC_32:=$(shell find $(LIB_32) $(LIB_COMMON) -name '*.c' -or -name '*.asm')
 OBJ_32:=$(SRC_32:%=$(BUILD)/%.32.o)
-
-SRC_64:=$(shell find $(LIB_64) -name '*.c' -or -name '*.asm')
+# libcommon is already a subdirectory of lib64 (/src)
+SRC_64:=$(shell find $(LIB_64)  -name '*.c' -or -name '*.asm')
 OBJ_64:=$(SRC_64:%=$(BUILD)/%.64.o)
 
 LOADER_BIN:=$(BUILD)/loader.BIN

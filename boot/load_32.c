@@ -2,6 +2,7 @@
 #define LOAD_32_C
 
 #include "../src/common/include/elf.h"
+#include "../src/common/include/gsyms.h"
 #include "../src/common/include/multiboot.h"
 #include "./include/gdt_32.h"
 #include "./include/paging_32.h"
@@ -17,7 +18,9 @@ extern gdtr32_t gdtr;
 extern gdt_desc gdt[GDT_NUM_ENT] __attribute__((aligned(8)));
 
 static const char boot_module_magic[] = "KnudKernel";
-char boot_reserve[PAGE_RESERVE_SIZE] __attribute__((aligned(PAGE_SIZE)));
+char boot_reserve[__BOOT_RESERVE_SIZE__] __attribute__((aligned(PAGE_SIZE)))
+__attribute__((section(".boot_reserve")));
+
 uint64_t reserve_off = 0;
 
 uint32_t long_mode_supported() {
@@ -74,7 +77,7 @@ uint32_t init_loader(uint32_t stack_top_addr) {
     }
     init_gdt();
     init_tss(stack_top_addr);
-    for (int k = 0; k < PAGE_RESERVE_SIZE; k++) {
+    for (int k = 0; k < sizeof(boot_reserve); k++) {
         boot_reserve[k] = 0;
     }
     boot_pml4 = (uint64_t*)reserve_alloc_page();
@@ -164,6 +167,8 @@ Elf64_Addr load_kernel(void* m_base) {
     }
     return ret;
 }
+// extern const uint64_t __KSTACK_TOP_VADDR__;
+// extern const uint64_t __KSTACK_BASE_SIZE__;
 
 ljmp_t mem;
 uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
@@ -174,6 +179,12 @@ uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
     Elf64_Addr entry_addr;
     if ((entry_addr = load_kernel(mboot_paddr)) == KERNEL_INVALID_ENTRY) {
         __KERNEL_PANIC__;
+    }
+    uint32_t n = CEIL_DIV(__KSTACK_BASE_SIZE__, PAGE_SIZE);
+    uint64_t virt = __KSTACK_TOP_VADDR__ - n * PAGE_SIZE;
+    for (uint32_t i = 0; i < n; i++) {
+        map_memory(virt + i * PAGE_SIZE, (uint64_t)reserve_alloc_page(), boot_pml4, 0,
+                   PAGE_DEFAULT);
     }
     init_cpu_state();
     mem.selector = GDT_KERN_CODE * sizeof(*gdt);
