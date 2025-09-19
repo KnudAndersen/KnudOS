@@ -1,6 +1,8 @@
 #ifndef MEMORY_C
 #define MEMORY_C
 #include "./include/memory.h"
+#include "../common/include/gsyms.h"
+#include "./include/io.h"
 
 /* -----------------------------------------
  * physical memory manager
@@ -30,16 +32,10 @@ void pmm_reserve(uint64_t paddr, uint64_t n) {
 }
 void pmm_init(multiboot_info* mb) {
     if ((uint64_t)mb != 0x10000) {
-        /* TODO: set up kernel stack before this so no overflow */
+        /* TODO: confirm this is not reachable */
         __KERNEL_PANIC__;
     }
-    // TODO: loop through mb->mmap and mark reserved physical
-    // pages as such.
-    // TODO: mark first 3MiB of memory as reserved.
-    // TODO: mark physical addresses like APIC as reserved
-    //
-    /* reserve first 2*MiB, and reserve kernel's physical image as backup */
-    pmm_reserve(mb->mods_addr, 2 * MiB);
+    pmm_reserve(0, 2 * MiB);
     multiboot_mod* m_mod = get_kernel(mb);
     pmm_reserve(m_mod->mod_start, m_mod->mod_end - m_mod->mod_start);
 
@@ -54,7 +50,10 @@ void pmm_init(multiboot_info* mb) {
             __KERNEL_PANIC__;
         }
         switch (iter->type) {
-            case MULTIBOOT_MMAP_AVAILABLE:
+            case MULTIBOOT_MMAP_RESERVED:
+                pmm_reserve(iter->base_addr, iter->length);
+                break;
+            case MULTIBOOT_MMAP_ACPI:
                 pmm_reserve(iter->base_addr, iter->length);
                 break;
             default:
@@ -93,4 +92,59 @@ void* pmm_alloc() {
  * TODO: virtual memory manager
  * ----------------------------------------- */
 
+/* -----------------------------------------
+ * TODO: kernel dyn alloc
+ * ----------------------------------------- */
+typedef struct heap_md {
+    // TODO: separate
+    uint32_t sz;
+    uint32_t free;
+    uint32_t checksum;
+    struct heap_md* next;
+} heap_md;
+#define HEAP_MAGIC (0xBADBEEF)
+uint64_t kheap_top;
+heap_md head;
+void init_kheap() {
+    kheap_top = __KHEAP_TOP_VADDR__;
+    head.next = NULL;
+    head.free = 0;
+    head.sz = 0;
+    head.checksum = HEAP_MAGIC;
+}
+void kprint_heap() {
+    heap_md* itr = &head;
+    while (itr) {
+
+        kprints("[INFO] DUMPING KERNEL HEAP METADATA\n");
+        kprints("{");
+        kprintlx(itr->sz);
+        kprints(", ");
+        kprintlx(itr->free);
+        kprints(", ");
+        kprintlx(itr->checksum);
+        kprints(", ");
+        kprintlx((uintptr_t)itr->next);
+        kprints("}\n");
+        itr = itr->next;
+    }
+    return;
+}
+void* kmalloc(uint32_t n) {
+    uint64_t free_addr = kheap_top;
+    heap_md* ptr = (heap_md*)free_addr;
+    ptr->free = 0;
+    ptr->next = &head;
+    ptr->sz = n;
+    ptr->checksum = HEAP_MAGIC;
+    kheap_top += (n + sizeof(heap_md));
+    return (void*)(free_addr + sizeof(heap_md));
+}
+void kfree(void* node) {
+    heap_md* md = (heap_md*)node - 1;
+    if (!(md->checksum == HEAP_MAGIC)) {
+        __KERNEL_PANIC__;
+    }
+    md->free = 1;
+}
 #endif

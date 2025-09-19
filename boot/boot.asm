@@ -23,7 +23,6 @@ boot_stack_lo:
     resb STACK_SIZE
 boot_stack_hi:
 
-
 section .text
 global boot_start
 boot_start:
@@ -36,10 +35,6 @@ boot_start:
     call loader_main
     cmp eax, LOADER_ERR
     je err_loop
-    ; edi=arg1, esi=arg2
-    ;mov edi, boot_stack_hi
-    ;mov esi, multiboot_addr
-    mov edi, boot_stack_hi
     mov esi, [multiboot_addr]
     jmp far [eax]
 err_loop:
