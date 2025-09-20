@@ -11,7 +11,8 @@ Existing in archives (...being conjured...):
 2) Device driver for PS/2 keyboard controller.
 
 ## Requirements
-1) A (modern) virtual machine for ``x86_64``. Needs to emulate BIOS firmware and have 1GiB of memory. (If you have ``qemu-system-x86_64``, then there is recipe in the ``Makefile`` to launch and wait for GDB.)
+1) A (modern) virtual machine for ``x86_64``. Needs to emulate BIOS firmware and have 1GiB of memory. (If you have ``qemu-system-x86_64``, then there is recipe in the ``Makefile`` to launch and wait for GDB with the corresponding ``.gdbinit`` config.)
+
 
 
 
