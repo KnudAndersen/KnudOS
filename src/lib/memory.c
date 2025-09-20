@@ -32,14 +32,9 @@ void pmm_reserve(uint64_t paddr, uint64_t n) {
     }
 }
 void pmm_init(multiboot_info* mb) {
-    if ((uint64_t)mb != 0x10000) {
-        /* TODO: confirm this is not reachable */
-        __KERNEL_PANIC__;
-    }
     pmm_reserve(0, 2 * MiB);
     multiboot_mod* m_mod = get_kernel(mb);
     pmm_reserve(m_mod->mod_start, m_mod->mod_end - m_mod->mod_start);
-
     char* base = (char*)(uintptr_t)mb->mmap_addr;
     mb_mmap_ent* iter;
     uint32_t i = 0;
@@ -96,6 +91,8 @@ void* pmm_alloc() {
 /* -----------------------------------------
  * TODO: kernel dyn alloc
  * ----------------------------------------- */
+
+/* TODO: improve kmalloc performance */
 uint64_t kheap_top;
 heap_md* head = NULL;
 void init_kheap(uint64_t* pml4, void* reserve, uint64_t* reserve_off) {
@@ -123,6 +120,7 @@ void kprint_heap() {
 void* kmalloc(uint32_t n) {
     uint64_t free_addr = kheap_top;
     if (kheap_top + n > __KHEAP_TOP_VADDR__ + PAGE_SIZE) {
+        /* TODO: interrupt handling and lazy paging */
         kprints("[INFO] Heap is out of mappings\n");
         __KERNEL_PANIC__;
     }
@@ -138,6 +136,7 @@ void* kmalloc(uint32_t n) {
 void kfree(void* node) {
     heap_md* md = (heap_md*)node - 1;
     if (!(md->checksum == HEAP_MAGIC)) {
+        /* corrupted heap */
         __KERNEL_PANIC__;
     }
     md->free = 1;
