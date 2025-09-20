@@ -1,7 +1,7 @@
-#ifndef PAGING_32_H
-#define PAGING_32_H
+#ifndef PAGING_H
+#define PAGING_H
 
-#include "common_32.h"
+#include <stdint.h>
 
 /*fixed x86-defined constants*/
 #define PAGE_SIZE         (4ULL * KiB)
@@ -21,8 +21,9 @@
 #define IA32_EFER_ADDR    (0xC0000080) /* model specific register for LM*/
 #define IA32_EFER_LME     (1 << 8)     /* long mode enable */
 
-void* reserve_alloc_page();
-void map_memory(uint64_t virt, uint64_t phys, uint64_t* pml4, uint64_t voff, uint64_t flags);
+void* reserve_alloc_page(void* reserve, uint64_t* reserve_off);
+void map_memory(uint64_t virt, uint64_t phys, uint64_t* pml4, uint64_t voff, uint64_t flags,
+                void* reserve, uint64_t* reserve_off);
 void unmap_memory(uint64_t virt, uint64_t phys, uint64_t* pml4, uint64_t voff, uint64_t flags);
 
 #endif

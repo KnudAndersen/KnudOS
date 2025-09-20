@@ -23,6 +23,9 @@ boot_stack_lo:
     resb STACK_SIZE
 boot_stack_hi:
 
+extern __boot_reserve_start__
+extern boot_pml4
+extern reserve_off
 section .text
 global boot_start
 boot_start:
@@ -35,7 +38,10 @@ boot_start:
     call loader_main
     cmp eax, LOADER_ERR
     je err_loop
-    mov esi, [multiboot_addr]
+    mov edi, [multiboot_addr]
+    mov esi, __boot_reserve_start__
+    mov edx, [reserve_off]
+    mov ecx, [boot_pml4]
     jmp far [eax]
 err_loop:
     cli

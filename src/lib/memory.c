@@ -2,6 +2,7 @@
 #define MEMORY_C
 #include "./include/memory.h"
 #include "../common/include/gsyms.h"
+#include "../common/include/paging.h"
 #include "./include/io.h"
 
 /* -----------------------------------------
@@ -95,28 +96,17 @@ void* pmm_alloc() {
 /* -----------------------------------------
  * TODO: kernel dyn alloc
  * ----------------------------------------- */
-typedef struct heap_md {
-    // TODO: separate
-    uint32_t sz;
-    uint32_t free;
-    uint32_t checksum;
-    struct heap_md* next;
-} heap_md;
-#define HEAP_MAGIC (0xBADBEEF)
 uint64_t kheap_top;
-heap_md head;
-void init_kheap() {
+heap_md* head = NULL;
+void init_kheap(uint64_t* pml4, void* reserve, uint64_t* reserve_off) {
     kheap_top = __KHEAP_TOP_VADDR__;
-    head.next = NULL;
-    head.free = 0;
-    head.sz = 0;
-    head.checksum = HEAP_MAGIC;
+    void* alloc = pmm_alloc();
+    map_memory(kheap_top, (uint64_t)alloc, pml4, 0, PAGE_DEFAULT, reserve, reserve_off);
 }
 void kprint_heap() {
-    heap_md* itr = &head;
-    while (itr) {
-
-        kprints("[INFO] DUMPING KERNEL HEAP METADATA\n");
+    heap_md* itr = head;
+    kprints("[INFO] DUMPING KERNEL HEAP METADATA\n");
+    while (itr != NULL) {
         kprints("{");
         kprintlx(itr->sz);
         kprints(", ");
@@ -132,11 +122,16 @@ void kprint_heap() {
 }
 void* kmalloc(uint32_t n) {
     uint64_t free_addr = kheap_top;
+    if (kheap_top + n > __KHEAP_TOP_VADDR__ + PAGE_SIZE) {
+        kprints("[INFO] Heap is out of mappings\n");
+        __KERNEL_PANIC__;
+    }
     heap_md* ptr = (heap_md*)free_addr;
     ptr->free = 0;
-    ptr->next = &head;
+    ptr->next = head;
     ptr->sz = n;
     ptr->checksum = HEAP_MAGIC;
+    head = ptr;
     kheap_top += (n + sizeof(heap_md));
     return (void*)(free_addr + sizeof(heap_md));
 }

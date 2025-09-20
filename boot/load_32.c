@@ -4,8 +4,8 @@
 #include "../src/common/include/elf.h"
 #include "../src/common/include/gsyms.h"
 #include "../src/common/include/multiboot.h"
+#include "../src/common/include/paging.h"
 #include "./include/gdt_32.h"
-#include "./include/paging_32.h"
 
 typedef struct kernel_long_jump {
     uint32_t entry;
@@ -20,8 +20,10 @@ extern gdt_desc gdt[GDT_NUM_ENT] __attribute__((aligned(8)));
 static const char boot_module_magic[] = "KnudKernel";
 char boot_reserve[__BOOT_RESERVE_SIZE__] __attribute__((aligned(PAGE_SIZE)))
 __attribute__((section(".boot_reserve")));
-
 uint64_t reserve_off = 0;
+
+uint64_t* boot_pml4;
+ljmp_t mem;
 
 uint32_t long_mode_supported() {
     // TODO copy code from archive
@@ -80,10 +82,10 @@ uint32_t init_loader(uint32_t stack_top_addr) {
     for (int k = 0; k < sizeof(boot_reserve); k++) {
         boot_reserve[k] = 0;
     }
-    boot_pml4 = (uint64_t*)reserve_alloc_page();
+    boot_pml4 = (uint64_t*)reserve_alloc_page(boot_reserve, &reserve_off);
     uint64_t page;
     for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
-        map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT);
+        map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT, boot_reserve, &reserve_off);
     return 1;
 }
 
@@ -119,18 +121,18 @@ Elf64_Addr load_elf(Elf64_Ehdr* base) {
             const uint64_t num_zero_page = CEIL_DIV(ph->p_memsz - ph->p_filesz, PAGE_SIZE);
             for (uint32_t j = 0; j < num_full_pg; j++) {
                 map_memory(ph->p_vaddr + j * PAGE_SIZE, phys_base + j * PAGE_SIZE, boot_pml4, 0,
-                           flags);
+                           flags, boot_reserve, &reserve_off);
             }
             if (bytes_partial_pg) {
-                page_alloc = reserve_alloc_page();
+                page_alloc = reserve_alloc_page(boot_reserve, &reserve_off);
                 Memcpy(page_alloc, (void*)(phys_base + num_full_pg * PAGE_SIZE), bytes_partial_pg);
                 map_memory(ph->p_vaddr + num_full_pg * PAGE_SIZE, (uintptr_t)page_alloc, boot_pml4,
-                           0, flags);
+                           0, flags, boot_reserve, &reserve_off);
             }
             for (uint32_t j = 0; j < num_zero_page; j++) {
-                page_alloc = reserve_alloc_page();
+                page_alloc = reserve_alloc_page(boot_reserve, &reserve_off);
                 map_memory(ph->p_vaddr + (j + num_partial_pg) * PAGE_SIZE, (uintptr_t)page_alloc,
-                           boot_pml4, 0, flags);
+                           boot_pml4, 0, flags, boot_reserve, &reserve_off);
             };
         }
         ph++;
@@ -150,7 +152,7 @@ Elf64_Addr load_kernel(void* m_base) {
         checksum = StrNCmp(boot_module_magic, mod_str, sizeof(boot_module_magic) - 1);
         if (checksum == 0) {
             for (uint64_t pg = mod_iter->mod_start; pg < mod_iter->mod_end; pg += PAGE_SIZE) {
-                map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT);
+                map_memory(pg, pg, boot_pml4, 0, PAGE_DEFAULT, boot_reserve, &reserve_off);
             }
             bin = (Elf64_Ehdr*)(uintptr_t)mod_iter->mod_start;
             if (!is_valid_elf(bin)) {
@@ -167,10 +169,7 @@ Elf64_Addr load_kernel(void* m_base) {
     }
     return ret;
 }
-// extern const uint64_t __KSTACK_TOP_VADDR__;
-// extern const uint64_t __KSTACK_BASE_SIZE__;
 
-ljmp_t mem;
 uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
     if (!init_loader(stack_top)) {
         __KERNEL_PANIC__;
@@ -183,8 +182,8 @@ uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
     uint32_t n = CEIL_DIV(__KSTACK_BASE_SIZE__, PAGE_SIZE);
     uint64_t virt = __KSTACK_TOP_VADDR__ - n * PAGE_SIZE;
     for (uint32_t i = 0; i < n; i++) {
-        map_memory(virt + i * PAGE_SIZE, (uint64_t)reserve_alloc_page(), boot_pml4, 0,
-                   PAGE_DEFAULT);
+        map_memory(virt + i * PAGE_SIZE, (uint64_t)reserve_alloc_page(boot_reserve, &reserve_off),
+                   boot_pml4, 0, PAGE_DEFAULT, boot_reserve, &reserve_off);
     }
     init_cpu_state();
     mem.selector = GDT_KERN_CODE * sizeof(*gdt);

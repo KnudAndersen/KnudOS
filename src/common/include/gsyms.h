@@ -8,7 +8,7 @@
 #define MiB                   (1024 * KiB)
 #define GiB                   (1024 * MiB)
 
-#define __BOOT_RESERVE_SIZE__ (23 * 4 * KiB)
+#define __BOOT_RESERVE_SIZE__ (25 * 4 * KiB)
 #define KSTACK_TOP            (0xFFFFFFFFFFFFF000ULL)
 #define KSTACK_BASE           (16 * KiB)
 #define KSTACK_MAX            (2 * GiB)

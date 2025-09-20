@@ -1,6 +1,8 @@
 #ifndef KERNEL_C
 #define KERNEL_C
 
+#include "./common/include/gsyms.h"
+#include "./common/include/paging.h"
 #include "./lib/include/io.h"
 #include "./lib/include/kcommon.h"
 #include "./lib/include/memory.h"
@@ -22,17 +24,17 @@ void init_kernel(multiboot_info* m_info) {
     vga_tty_render(&tty0);
     pmm_init(m_info);
 }
-void kernel_main() {
-
-    /* ************************************ */
-    /* TREAT AS KNUD OS ABI, DO NOT MODIFY! */
-    uint32_t __multiboot = pop_reg32(ESI);
-    /* ************************************ */
-
+void kernel_main(uint64_t __multiboot, uint64_t __reserve, uint64_t __reserve_off,
+                 uint64_t __boot_pml4) {
     multiboot_info* m_info = (multiboot_info*)(uint64_t)__multiboot;
     init_kernel(m_info);
-    init_kheap();
-    void* test = kmalloc(0x69);
+    init_kheap((uint64_t*)__boot_pml4, (void*)__reserve, &__reserve_off);
+    uint64_t test_size = PAGE_SIZE - sizeof(heap_md); // -22 X, -23 ok
+    char* test = (char*)kmalloc(test_size);
+    for (uint32_t i = 0; i < test_size; i++) {
+        test[i] = 0;
+    }
+    /* boot pml4 identity mapped */
     kprint_heap();
     while (1) {
         asm volatile("hlt");
