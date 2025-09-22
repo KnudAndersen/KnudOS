@@ -6,12 +6,13 @@
 4) VGA text mode graphics library supporting multiple TTY instances displaying at once with standard I/O.
 5) Virtual and physical memory managers and kernel/user space fine-grained dynamic allocators.
 
-Existing in archives (...being conjured...):
+Soon:
 1) Routed IRQ lines and initialized hardware interrupt handling with LAPIC and I/O APIC to support hardware timers (PIT, HPET, LAPIC), and external IRQ's e.g. (PS/2 controller).
 2) Device driver for PS/2 keyboard controller.
 
 ## Requirements
 1) A (modern) virtual machine for ``x86_64``. Needs to emulate BIOS firmware and have 1GiB of memory. (If you have ``qemu-system-x86_64``, then there is recipe in the ``Makefile`` to launch and wait for GDB with the corresponding ``.gdbinit`` config.)
+
 
 
 
