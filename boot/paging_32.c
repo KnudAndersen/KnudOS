@@ -1,8 +1,8 @@
-#ifndef PAGING_C
-#define PAGING_C
+#ifndef PAGING_32_C
+#define PAGING_32_C
 
-#include "./include/paging.h"
-#include "./include/gsyms.h"
+#include "./include/paging_32.h"
+#include "../common/include/gsyms.h"
 
 // assumes that boot_reserve is zero-d out for performance
 void* reserve_alloc_page(void* boot_reserve, uint64_t* reserve_off) {

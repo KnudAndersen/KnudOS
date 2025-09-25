@@ -7,7 +7,7 @@
 #define HEXSHIFT (4)
 #define HEXMOD   (0xF)
 #define DECMOD   (10)
-
+void kprint_heap();
 void tbufferc(tty_t* term, char c);
 void tbufferd(tty_t* term, uint32_t c);
 void tbuffers(tty_t* term, const char* const str);

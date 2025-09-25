@@ -8,10 +8,12 @@
 #define MiB                   (1024 * KiB)
 #define GiB                   (1024 * MiB)
 
-#define __BOOT_RESERVE_SIZE__ (25 * 4 * KiB)
+#define __BOOT_RESERVE_SIZE__ (40 * MiB)
 #define KSTACK_TOP            (0xFFFFFFFFFFFFF000ULL)
 #define KSTACK_BASE           (16 * KiB)
 #define KSTACK_MAX            (2 * GiB)
+#define HHDM_OFF              (0xFFFF800000000000ULL)
+#define HHDM_PHYS_END         ((1 * GiB) / 2)
 
 extern const uint64_t __KSTACK_TOP_VADDR__;
 extern const uint64_t __KSTACK_BASE_SIZE__;
