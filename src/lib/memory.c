@@ -1,14 +1,15 @@
 #ifndef MEMORY_C
 #define MEMORY_C
 #include "./include/memory.h"
-#include "../common/include/gsyms.h"
-#include "../common/include/paging.h"
+#include "../../common/include/gsyms.h"
 #include "./include/io.h"
+#include "./include/paging.h"
 
 /* -----------------------------------------
  * physical memory manager
  * ----------------------------------------- */
 uint64_t pmm_bitmap[PMM_ROWS] = {0};
+/* TODO: adjust for available pmem in multiboot header */
 
 static inline void pmm_set_used(uint32_t i, uint32_t j) {
     pmm_bitmap[j] |= (1 << (PMM_COLS - 1 - i));
@@ -32,6 +33,9 @@ void pmm_reserve(uint64_t paddr, uint64_t n) {
     }
 }
 void pmm_init(multiboot_info* mb) {
+    for (uint32_t i = 0; i < PMM_ROWS; i++) {
+        pmm_bitmap[i] = 0;
+    }
     pmm_reserve(0, 2 * MiB);
     multiboot_mod* m_mod = get_kernel(mb);
     pmm_reserve(m_mod->mod_start, m_mod->mod_end - m_mod->mod_start);
@@ -77,16 +81,58 @@ void* pmm_alloc() {
             if (!pmm_used(i, j)) {
                 ret_addr = PAGE_SIZE * (PMM_COLS * j + i);
                 pmm_set_used(i, j);
-                return (void*)ret_addr;
+                break;
             }
         }
     }
-    return (void*)0;
+    if (!ret_addr || ret_addr >= HHDM_PHYS_END) {
+        /* TODO: expand hhdm dynamically or increase */
+        __KERNEL_PANIC__;
+    }
+    return (void*)ret_addr;
 }
 
 /* -----------------------------------------
  * TODO: virtual memory manager
  * ----------------------------------------- */
+typedef struct addr_space {
+    uint64_t* pml4;
+    struct vmm_ent* start;
+    struct vmm_ent* end;
+} addr_space;
+
+typedef struct vmm_ent {
+    uint64_t start;
+    uint64_t end;
+    uint64_t flags;
+    struct vmm_ent* next;
+    uint64_t phys;
+} vmm_ent;
+
+void vmm_init() {
+}
+
+void* vmm_alloc(addr_space* as, uint64_t size, uint64_t x86_flags, void* arg) {
+    /* TODO: enforce policy of start and end */
+    /* TODO: have layer between x86 flags and vmm flags, makes stuff like XD easier*/
+    vmm_ent* new_region = NULL;
+    vmm_ent* prev = as->start;
+    vmm_ent* itr = as->start->next;
+    while (itr) {
+        if (prev->end + size < itr->start) {
+            new_region = kmalloc(sizeof(vmm_ent));
+            *new_region = (vmm_ent){prev->end + 1, prev->end + 1 + size, x86_flags, itr};
+            uint64_t* phys = (arg) ? arg : pmm_alloc();
+            map_memory(prev->end + 1, (uint64_t)phys, as->pml4, 0, x86_flags);
+            prev->next = new_region;
+            break;
+        }
+    }
+
+    return new_region;
+}
+void vmm_free() {
+}
 
 /* -----------------------------------------
  * TODO: kernel dyn alloc
@@ -95,27 +141,10 @@ void* pmm_alloc() {
 /* TODO: improve kmalloc performance */
 uint64_t kheap_top;
 heap_md* head = NULL;
-void init_kheap(uint64_t* pml4, void* reserve, uint64_t* reserve_off) {
+void init_kheap(uint64_t* pml4) {
     kheap_top = __KHEAP_TOP_VADDR__;
     void* alloc = pmm_alloc();
-    map_memory(kheap_top, (uint64_t)alloc, pml4, 0, PAGE_DEFAULT, reserve, reserve_off);
-}
-void kprint_heap() {
-    heap_md* itr = head;
-    kprints("[INFO] DUMPING KERNEL HEAP METADATA\n");
-    while (itr != NULL) {
-        kprints("{");
-        kprintlx(itr->sz);
-        kprints(", ");
-        kprintlx(itr->free);
-        kprints(", ");
-        kprintlx(itr->checksum);
-        kprints(", ");
-        kprintlx((uintptr_t)itr->next);
-        kprints("}\n");
-        itr = itr->next;
-    }
-    return;
+    map_memory(kheap_top, (uint64_t)alloc, pml4, 0, PAGE_DEFAULT);
 }
 void* kmalloc(uint32_t n) {
     uint64_t free_addr = kheap_top;

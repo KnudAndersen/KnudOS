@@ -1,11 +1,11 @@
 #ifndef LOAD_32_C
 #define LOAD_32_C
 
-#include "../src/common/include/elf.h"
-#include "../src/common/include/gsyms.h"
-#include "../src/common/include/multiboot.h"
-#include "../src/common/include/paging.h"
+#include "../common/include/elf.h"
+#include "../common/include/gsyms.h"
+#include "../common/include/multiboot.h"
 #include "./include/gdt_32.h"
+#include "./include/paging_32.h"
 
 typedef struct kernel_long_jump {
     uint32_t entry;
@@ -86,6 +86,8 @@ uint32_t init_loader(uint32_t stack_top_addr) {
     uint64_t page;
     for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
         map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT, boot_reserve, &reserve_off);
+    for (page = (uint64_t)&__loader_end__; page < HHDM_PHYS_END; page += PAGE_SIZE)
+        map_memory(page + HHDM_OFF, page, boot_pml4, 0, PAGE_DEFAULT, boot_reserve, &reserve_off);
     return 1;
 }
 
