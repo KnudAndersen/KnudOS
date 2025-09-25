@@ -73,4 +73,24 @@ uint32_t pop_reg32(uint8_t reg) {
     }
     return ret;
 }
+
+void MemSet64(void* ptr, unsigned char byte, uint64_t n) {
+    uint64_t i;
+    uint64_t quad = 0x0101010101010101ULL * byte;
+    char* p_b = ptr;
+    uint64_t* p_q;
+    while (((uint64_t)p_b & 0x7) && n) {
+        *(p_b++) = byte;
+        n--;
+    }
+    p_q = (uint64_t*)p_b;
+    for (i = 0; i < n / 8; i++) {
+        *(p_q++) = quad;
+    }
+    p_b = (char*)p_q;
+    for (i = 0; i < n % 8; i++) {
+        *(p_b++) = byte;
+    }
+}
+
 #endif

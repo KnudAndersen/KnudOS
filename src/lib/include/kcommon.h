@@ -1,7 +1,7 @@
 #ifndef KCOMMON_H
 #define KCOMMON_H
 
-#include "../../common/include/multiboot.h"
+#include "../../../common/include/multiboot.h"
 #include <stdint.h>
 
 #define PAGE_SIZE (4096ULL)
@@ -29,4 +29,5 @@ uint32_t pop_reg32(uint8_t reg);
 int32_t StrCmp(const char* s_1, const char* s_2);
 int32_t StrNCmp(const char* s_1, const char* s_2, uint32_t n);
 multiboot_mod* get_kernel(multiboot_info* m_info);
+void MemSet64(void* ptr, unsigned char byte, uint64_t n);
 #endif
