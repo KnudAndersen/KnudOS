@@ -123,7 +123,7 @@ void* vmm_alloc(addr_space* as, uint64_t size, uint64_t x86_flags, void* arg) {
             new_region = kmalloc(sizeof(vmm_ent));
             *new_region = (vmm_ent){prev->end + 1, prev->end + 1 + size, x86_flags, itr};
             uint64_t* phys = (arg) ? arg : pmm_alloc();
-            map_memory(prev->end + 1, (uint64_t)phys, as->pml4, 0, x86_flags);
+            map_memory(prev->end + 1, (uint64_t)phys, as->pml4, HHDM_OFF, x86_flags);
             prev->next = new_region;
             break;
         }
@@ -144,7 +144,7 @@ heap_md* head = NULL;
 void init_kheap(uint64_t* pml4) {
     kheap_top = __KHEAP_TOP_VADDR__;
     void* alloc = pmm_alloc();
-    map_memory(kheap_top, (uint64_t)alloc, pml4, 0, PAGE_DEFAULT);
+    map_memory(kheap_top, (uint64_t)alloc, pml4, HHDM_OFF, PAGE_DEFAULT);
 }
 void* kmalloc(uint32_t n) {
     uint64_t free_addr = kheap_top;

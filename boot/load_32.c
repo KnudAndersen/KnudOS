@@ -73,6 +73,9 @@ void init_cpu_state() {
                  : "eax");
     return;
 }
+uint64_t dbg_1 = 0;
+uint64_t dbg_2 = 0;
+
 uint32_t init_loader(uint32_t stack_top_addr) {
     if (!long_mode_supported()) {
         return 0;
@@ -86,8 +89,17 @@ uint32_t init_loader(uint32_t stack_top_addr) {
     uint64_t page;
     for (page = 0; page < (uint64_t)&__loader_end__; page += PAGE_SIZE)
         map_memory(page, page, boot_pml4, 0, PAGE_DEFAULT, boot_reserve, &reserve_off);
-    for (page = (uint64_t)&__loader_end__; page < HHDM_PHYS_END; page += PAGE_SIZE)
+    for (page = (uint64_t)&__loader_end__ + PAGE_SIZE; page < HHDM_PHYS_END; page += PAGE_SIZE)
         map_memory(page + HHDM_OFF, page, boot_pml4, 0, PAGE_DEFAULT, boot_reserve, &reserve_off);
+    uint32_t reserve_pages = CEIL_DIV(__BOOT_RESERVE_SIZE__, PAGE_SIZE);
+    dbg_1 = (uint64_t)&boot_reserve[0] + HHDM_OFF;
+    dbg_2 = (uint64_t)&boot_reserve[0] + (reserve_pages - 1) * PAGE_SIZE + HHDM_OFF;
+
+    for (uint32_t i = 0; i < reserve_pages; i++) {
+        map_memory((uint64_t)&boot_reserve[0] + i * PAGE_SIZE + HHDM_OFF,
+                   ((uint64_t)&boot_reserve[0]) + i * PAGE_SIZE, boot_pml4, 0, PAGE_DEFAULT,
+                   boot_reserve, &reserve_off);
+    }
     return 1;
 }
 
@@ -187,9 +199,10 @@ uint32_t loader_main(uint32_t stack_top, uint32_t stack_bot) {
         map_memory(virt + i * PAGE_SIZE, (uint64_t)reserve_alloc_page(boot_reserve, &reserve_off),
                    boot_pml4, 0, PAGE_DEFAULT, boot_reserve, &reserve_off);
     }
-    init_cpu_state();
+
     mem.selector = GDT_KERN_CODE * sizeof(*gdt);
-    mem.entry = (uint32_t)entry_addr;
+    mem.entry = (uint32_t)0x10000000;
+    init_cpu_state();
     return (uint32_t)(uintptr_t)&mem;
 }
 

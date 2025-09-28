@@ -24,6 +24,7 @@ void init_kernel(multiboot_info* m_info, uint64_t* pml4, char* reserve, uint64_t
     vga_tty_render(&tty0);
     pmm_init(m_info);
     init_kheap(pml4);
+    void* test = kmalloc(2);
     kprint_heap();
 }
 

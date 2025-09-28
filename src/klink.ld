@@ -1,8 +1,7 @@
 ENTRY(jump_to_kernel)
 
 VIRT = 0xFFFF800000000000;
-PHYS = 0x300000;
-
+PHYS = 0x10000000;
 SECTIONS {
     . = PHYS;
     .kernel_entry ALIGN (0x1000) : {
