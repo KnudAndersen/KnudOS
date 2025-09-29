@@ -12,19 +12,24 @@
 tty_t tty0 = (tty_t){0};
 void init_kernel(multiboot_info* m_info, uint64_t* pml4, char* reserve, uint64_t* reserve_off) {
     /* TODO:
-     * map kstack
-     * map ACPI region and other MMIO like APIC
-     * pass down multiboot info from boostrap
-     * initialize pmm accounting for all in-use pages (use multiboot mmap)
-     * set up paging again using the pmm and HHDM
-     * vmm/kheap
+     * set up IDT and interrupt routing
+     * ACPI tables parser
+     * reserve map ACPI region and other MMIO like APIC
+     * set up VMM, add support for specific physaddrs for MMIO
+     *
+     * Bonus:
      * formatted io/logging
+     * stop demand paging kstack (set fixed size, e.g. linux recently updated to 8KiB)
      */
     tty_init(&tty0, VGA_ROWS_MAX, VGA_COLS_MAX, TTY_DEFAULT_FG, TTY_DEFAULT_BG, 0, 0);
     vga_tty_render(&tty0);
     pmm_init(m_info);
     init_kheap(pml4);
-    void* test = kmalloc(2);
+    uint64_t tmp = PAGE_SIZE / 2;
+    char* test = (char*)kmalloc(tmp);
+    for (int i = 0; i < tmp; i++) {
+        test[i] = 0;
+    }
     kprint_heap();
 }
 
