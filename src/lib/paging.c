@@ -2,8 +2,7 @@
 #define PAGING_C
 
 #include "./include/paging.h"
-#include "../../common/include/gsyms.h"
-#include "./include/memory.h"
+#include "./include/pmm.h"
 
 // accepts physical address of PTE
 static inline uint64_t* get_next_table(uint64_t* pte_vaddr, uint64_t voff) {

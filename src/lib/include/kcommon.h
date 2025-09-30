@@ -1,7 +1,9 @@
 #ifndef KCOMMON_H
 #define KCOMMON_H
 
+#include "../../../common/include/gsyms.h"
 #include "../../../common/include/multiboot.h"
+
 #include <stdint.h>
 
 #define PAGE_SIZE (4096ULL)
@@ -9,6 +11,7 @@
 #define KiB       (1024ULL)
 #define MiB       (1024ULL * KiB)
 #define GiB       (1024ULL * MiB)
+
 #define NULL      ((void*)0)
 
 #define __KERNEL_PANIC__         \

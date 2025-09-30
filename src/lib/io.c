@@ -148,23 +148,5 @@ void tprintdx(tty_t* term, uint32_t val) {
 void tprintlx(tty_t* term, uint64_t val) {
     tprint_pow2(term, val, HEXSHIFT, HEXMOD, sizeof(val));
 }
-extern heap_md* head;
-void kprint_heap() {
-    heap_md* itr = head;
-    kprints("[INFO] DUMPING KERNEL HEAP METADATA\n");
-    while (itr != NULL) {
-        kprints("{");
-        kprintlx(itr->sz);
-        kprints(", ");
-        kprintlx(itr->free);
-        kprints(", ");
-        kprintlx(itr->checksum);
-        kprints(", ");
-        kprintlx((uintptr_t)itr->next);
-        kprints("}\n");
-        itr = itr->next;
-    }
-    return;
-}
 
 #endif
