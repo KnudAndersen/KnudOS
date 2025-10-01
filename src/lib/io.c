@@ -2,7 +2,6 @@
 #define IO_C
 
 #include "./include/io.h"
-#include "./include/memory.h"
 
 extern tty_t tty0;
 
