@@ -4,8 +4,8 @@
 #include "./include/paging.h"
 #include "./include/pmm.h"
 
-// accepts physical address of PTE
-static inline uint64_t* get_next_table(uint64_t* pte_vaddr, uint64_t voff) {
+ // accepts physical address of PTE
+            static inline uint64_t* get_next_table(uint64_t* pte_vaddr, uint64_t voff) {
     uint64_t* ret_vaddr;
     if (*pte_vaddr & PAGE_PRESENT) {
         uint64_t tmp = *pte_vaddr & ~(PAGE_SIZE - 1);

@@ -2,3 +2,4 @@ cross/
 build/
 **.o
 **.BIN
+compile_flags.txt

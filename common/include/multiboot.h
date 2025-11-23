@@ -1,38 +1,42 @@
-#ifndef MULTIBOOT_H
-#define MULTIBOOT_H
+#include <types.h>
 
-#include <stdint.h>
+// I have bits 0 & 1 of flags set
+typedef struct mb_info {
+	U32 flags;
+	U32 mem_lower;
+	U32 mem_upper;
+	U32 boot_device;
+	U32 cmdline;
+	U32 mods_count;
+	U32 mods_addr;
+	U32 syms[4];
+	U32 mmap_length;
+	U32 mmap_addr;
+	U32 drives_length;
+	U32 drives_addr;
+	U32 config_table;
+	U32 boot_loader_name;
+	U32 apm_table;
+	U32 vbe_control_info;
+	U32 vbe_mode_info;
+	U16 vbe_mode;
+	U16 vbe_interface_seg;
+	U16 vbe_interface_off;
+	U16 vbe_interface_len;
+	U64 framebuffer_addr;
+	U32 framebuffer_pitch;
+	U32 framebuffer_width;
+	U32 framebuffer_height;
+	U8 framebuffer_bpp;
+	U8 framebuffer_type;
+	U8 color_info[5];
+} mb_info;
 
-#define MULTIBOOT_MMAP_AVAILABLE   (1)
-#define MULTIBOOT_MMAP_RESERVED    (2) /* TODO: confirm */
-#define MULTIBOOT_MMAP_ACPI        (3)
-#define MULTIBOOT_MMAP_HIBERNATION (4)
-#define MULTIBOOT_MMAP_DEFECTIVE   (5)
+#define MBI_FLAG_MEM       (1 << 0)
+#define MBI_FLAG_CMDLINE   (1 << 2)
+#define MBI_FLAG_MODS      (1 << 3)
+#define MBI_FLAG_MMAP      (1 << 6)
 
-typedef struct {
-    uint32_t flags;
-    uint32_t mem_lower;
-    uint32_t mem_upper;
-    uint32_t boot_device;
-    uint32_t cmdline;
-    uint32_t mods_count;
-    uint32_t mods_addr;
-    uint32_t syms[4];
-    uint32_t mmap_length;
-    uint32_t mmap_addr;
-} __attribute__((packed)) multiboot_info;
-
-typedef struct {
-    uint32_t mod_start;
-    uint32_t mod_end;
-    uint32_t string;
-    uint32_t reserved;
-} __attribute__((packed)) multiboot_mod;
-
-typedef struct multiboot_mmap_ent {
-    uint32_t size;
-    uint64_t base_addr;
-    uint64_t length;
-    uint32_t type;
-} __attribute__((packed)) mb_mmap_ent;
-#endif
+#define MBI_HAS_MEM(info)  (!!((info)->flags & MBI_FLAG_MEM))
+#define MBI_HAS_MODS(info) (!!((info)->flags & MBI_FLAG_MODS))
+#define MBI_HAS_MMAP(info) (!!((info)->flags & MBI_FLAG_MMAP))
