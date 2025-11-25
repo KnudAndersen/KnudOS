@@ -1,9 +1,9 @@
 #include <str.h>
 
-SIZE_T StrLen(CHAR* str)
+size_t StrLen(const char* str)
 {
-	CHAR* tmp = str;
+	const char* tmp = str;
 	while (*tmp)
 		tmp++;
-	return (SIZE_T)(tmp - str);
+	return (size_t)(tmp - str);
 }

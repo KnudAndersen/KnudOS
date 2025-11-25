@@ -1,5 +1,6 @@
 #ifndef TTY_H
 #define TTY_H
+
 #include <types.h>
 
 #define TTY_KIND_VGA (1)
@@ -11,5 +12,7 @@ struct tty {
 };
 
 void init_tty(U32 kind, struct tty* tty);
+void tty_write_char(struct tty* tty, char c);
+void tty_write_string(struct tty* tty, char* src);
 
 #endif

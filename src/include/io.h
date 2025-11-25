@@ -4,6 +4,6 @@
 #include <types.h>
 #include <tty.h>
 
-VOID PrintF(struct tty* tty, CHAR* str);
+void PrintF(const char* fmt, ...);
 
 #endif

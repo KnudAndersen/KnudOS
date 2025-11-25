@@ -3,6 +3,6 @@
 
 #include <types.h>
 
-SIZE_T StrLen(CHAR* str);
+size_t StrLen(const char* str);
 
 #endif

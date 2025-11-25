@@ -12,12 +12,9 @@ typedef int8_t I8;
 typedef int16_t I16;
 typedef int32_t I32;
 typedef int64_t I64;
-
-typedef uint64_t SIZE_T;
-typedef char CHAR;
 typedef uintptr_t UPTR;
-typedef void VOID;
 
+typedef uint64_t size_t;
 // level 1 types
 
 typedef struct page_t {

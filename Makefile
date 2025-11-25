@@ -4,7 +4,7 @@ SRC_64_RAW_EXTNS:=c ld S
 
 TARGET_32:=i686-elf
 TARGET_64:=x86_64-elf
-CROSS_DIR:=./cross
+CROSS_DIR:=./.cross
 
 CC_32:=$(shell find $(CROSS_DIR) -name '$(TARGET_32)-gcc')
 CC_64:=$(shell find $(CROSS_DIR) -name '$(TARGET_64)-gcc')
