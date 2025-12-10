@@ -12,7 +12,7 @@
 
 extern char boot_stack_hi[];
 
-void* loader_main(U32 __multiboot_paddr)
+void* loader_main(u32 __multiboot_paddr)
 {
 	mb_info* info = MAKE_PTR(__multiboot_paddr);
 	void *cr3, *gdt, *tss;

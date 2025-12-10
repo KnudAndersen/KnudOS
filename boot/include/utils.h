@@ -3,7 +3,7 @@
 
 #include <types.h>
 
-void loader_memset(void* a, char ch, U32 n);
+void loader_memset(void* a, char ch, u32 n);
 
 static inline void halt_forever()
 {

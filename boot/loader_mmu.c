@@ -18,7 +18,7 @@
 struct tss tss ALIGN_C(16);
 struct gdt gdt ALIGN_C(16);
 
-extern U64 __linker_loader_end;
+extern u64 __linker_loader_end;
 
 Elf64_Addr get_kernel_entry(mb_info* info)
 {
@@ -29,7 +29,7 @@ Elf64_Addr get_kernel_entry(mb_info* info)
 	return ret;
 }
 
-static void gdt_set_tss_entry(U32 lim, U64 base, U8 access, U8 flag)
+static void gdt_set_tss_entry(u32 lim, u64 base, u8 access, u8 flag)
 {
 	lim &= 0xFFFFF;
 	flag &= 0xF;
@@ -42,13 +42,13 @@ static void gdt_set_tss_entry(U32 lim, U64 base, U8 access, U8 flag)
 		.base_31_24 = (base >> 24) & 0xFF,
 		.base_63_32 = (base >> 32) & 0xFFFFFFFF,
 		.lim_15_0 = (lim >> 0) & 0xFFFF,
-		.flag_lim_19_16 = ((U16)flag << 4) | ((lim >> 16) & 0xF),
+		.flag_lim_19_16 = ((u16)flag << 4) | ((lim >> 16) & 0xF),
 		.access = access,
 		.reserved = 0,
 	};
 }
 
-static void gdt_set_entry(U32 num, U32 lim, U32 base, U8 access, U8 flag)
+static void gdt_set_entry(u32 num, u32 lim, u32 base, u8 access, u8 flag)
 {
 	lim &= 0xFFFFF;
 	flag &= 0xF;
@@ -68,7 +68,7 @@ static void gdt_set_entry(U32 num, U32 lim, U32 base, U8 access, U8 flag)
 page_t boot_pages[BOOT_PAGES_MAX] ALIGN_C(PAGE_SIZE);
 static void* alloc_boot_page()
 {
-	static U32 unused = 0;
+	static u32 unused = 0;
 	if (unused >= BOOT_PAGES_MAX) {
 		halt_forever();
 		return NULL;
@@ -78,9 +78,9 @@ static void* alloc_boot_page()
 	return ret;
 }
 
-static U64 elf_to_x86_flags(U64 flags)
+static u64 elf_to_x86_flags(u64 flags)
 {
-	U64 ret = 0;
+	u64 ret = 0;
 	if (flags & PF_X) {
 		ret &= ~(X86_EXEC_DISABLE);
 	}
@@ -90,19 +90,19 @@ static U64 elf_to_x86_flags(U64 flags)
 	return ret;
 }
 
-static page_table_t* get_next_table(page_table_t* parent, U64 index)
+static page_table_t* get_next_table(page_table_t* parent, u64 index)
 {
 	page_table_t* next;
 	if (!(parent->entries[index] & X86_PRESENT)) {
 		next = alloc_boot_page();
-		parent->entries[index] = (U64)next | X86_PRESENT | X86_READ_WRITE;
+		parent->entries[index] = (u64)next | X86_PRESENT | X86_READ_WRITE;
 	} else {
 		next = (page_table_t*)(parent->entries[index] & X86_ADDR_MASK);
 	}
 	return next;
 }
 
-static void boot_map_page(U64 virt, U64 phys, U64 flags, U8 option, void* cr3)
+static void boot_map_page(u64 virt, u64 phys, u64 flags, u8 option, void* cr3)
 {
 	flags = (option & OPT_ELF_FLAGS) ? elf_to_x86_flags(flags) :
 	        (option & OPT_X86_FLAGS) ? flags :
@@ -110,29 +110,29 @@ static void boot_map_page(U64 virt, U64 phys, U64 flags, U8 option, void* cr3)
 	if (flags == 0) {
 		halt_forever();
 	}
-	U64 vaddr = (U64)virt & ~(PAGE_SIZE - 1);
-	U64 paddr = (U64)phys & ~(PAGE_SIZE - 1);
+	u64 vaddr = (u64)virt & ~(PAGE_SIZE - 1);
+	u64 paddr = (u64)phys & ~(PAGE_SIZE - 1);
 
-	U32 pt_index = (vaddr >> 12) & 0x1FF;
-	U32 pdt_index = (vaddr >> 21) & 0x1FF;
-	U32 pdpt_index = (vaddr >> 30) & 0x1FF;
-	U32 pml4_index = (vaddr >> 39) & 0x1FF;
+	u32 pt_index = (vaddr >> 12) & 0x1FF;
+	u32 pdt_index = (vaddr >> 21) & 0x1FF;
+	u32 pdpt_index = (vaddr >> 30) & 0x1FF;
+	u32 pml4_index = (vaddr >> 39) & 0x1FF;
 
-	page_table_t* pml4 = (page_table_t*)((U64)cr3 & X86_ADDR_MASK);
+	page_table_t* pml4 = (page_table_t*)((u64)cr3 & X86_ADDR_MASK);
 	page_table_t* pdpt = get_next_table(pml4, pml4_index);
 	page_table_t* pdt = get_next_table(pdpt, pdpt_index);
 	page_table_t* pt = get_next_table(pdt, pdt_index);
 
-	pt->entries[pt_index] = (U64)phys | flags | X86_PRESENT;
+	pt->entries[pt_index] = (u64)phys | flags | X86_PRESENT;
 }
 
-static void map_page_range(U64 virt_base, U64 phys_base, U64 bytes, U64 flags, U8 option, void* cr3)
+static void map_page_range(u64 virt_base, u64 phys_base, u64 bytes, u64 flags, u8 option, void* cr3)
 {
-	U64 phys, virt;
-	U32 num_pages = CEIL_DIV(bytes, PAGE_SIZE);
+	u64 phys, virt;
+	u32 num_pages = CEIL_DIV(bytes, PAGE_SIZE);
 
-	for (U32 pg = 0; pg < num_pages; ++pg) {
-		phys = (option & OPT_PHYS_ALLOC) ? (U64)alloc_boot_page() :
+	for (u32 pg = 0; pg < num_pages; ++pg) {
+		phys = (option & OPT_PHYS_ALLOC) ? (u64)alloc_boot_page() :
 		                                   phys_base + pg * PAGE_SIZE;
 		virt = virt_base + pg * PAGE_SIZE;
 		boot_map_page(virt, phys, flags, option, cr3);
@@ -140,10 +140,10 @@ static void map_page_range(U64 virt_base, U64 phys_base, U64 bytes, U64 flags, U
 }
 static void elf_load_segment(Elf64_Ehdr* header, Elf64_Phdr* segment, void* cr3)
 {
-	U64 file_start, file_size, mem_size, pg_off;
-	U64 phys_addr, virt_addr;
+	u64 file_start, file_size, mem_size, pg_off;
+	u64 phys_addr, virt_addr;
 
-	file_start = (U64)header;
+	file_start = (u64)header;
 	file_size = CEIL_DIV(segment->p_filesz, PAGE_SIZE) * PAGE_SIZE;
 	mem_size = CEIL_DIV(segment->p_memsz, PAGE_SIZE) * PAGE_SIZE;
 
@@ -154,14 +154,14 @@ static void elf_load_segment(Elf64_Ehdr* header, Elf64_Phdr* segment, void* cr3)
 	}
 
 	if (segment->p_filesz < file_size) {
-		U64 pg_end = segment->p_filesz % PAGE_SIZE;
-		U64 pg_start = file_size - PAGE_SIZE;
-		U8* pg = (U8*)MAKE_PTR(file_start + segment->p_offset + pg_start);
+		u64 pg_end = segment->p_filesz % PAGE_SIZE;
+		u64 pg_start = file_size - PAGE_SIZE;
+		u8* pg = (u8*)MAKE_PTR(file_start + segment->p_offset + pg_start);
 		loader_memset(pg + pg_end, 0, PAGE_SIZE - pg_end);
 	}
 
 	for (pg_off = file_size; pg_off < mem_size; pg_off += PAGE_SIZE) {
-		phys_addr = (U64)alloc_boot_page();
+		phys_addr = (u64)alloc_boot_page();
 		virt_addr = segment->p_vaddr + pg_off;
 		boot_map_page(virt_addr, phys_addr, segment->p_flags, OPT_ELF_FLAGS, cr3);
 	}
@@ -175,15 +175,15 @@ void init_kernel(mb_info* info, void** cr3)
 	if (*cr3 == NULL)
 		halt_forever();
 
-	U64 bytes = (U64)&__linker_loader_end - EXTMEM;
-	U64 flags = X86_READ_WRITE | X86_PRESENT;
-	U64 base_addr = EXTMEM;
+	u64 bytes = (u64)&__linker_loader_end - EXTMEM;
+	u64 flags = X86_READ_WRITE | X86_PRESENT;
+	u64 base_addr = EXTMEM;
 
 	map_page_range(base_addr, base_addr, bytes, flags, OPT_X86_FLAGS, *cr3);
 
 	map_page_range(0, 0, 2 * MiB, flags, OPT_X86_FLAGS, *cr3);
 
-	map_page_range(KSTACK_LO_NTH(0), (U64)NULL, KSTACK_SIZE, flags,
+	map_page_range(KSTACK_LO_NTH(0), (u64)NULL, KSTACK_SIZE, flags,
 	               OPT_X86_FLAGS | OPT_PHYS_ALLOC, *cr3);
 
 	if (info->mods_count != 1)
@@ -198,7 +198,7 @@ void init_kernel(mb_info* info, void** cr3)
 	Elf64_Half seg_num = header->e_phnum;
 	Elf64_Phdr* segment = MAKE_PTR(iter->mod_start + header->e_phoff);
 
-	for (U32 seg = 0; seg < seg_num; seg++) {
+	for (u32 seg = 0; seg < seg_num; seg++) {
 		if (segment->p_type == PT_LOAD)
 			elf_load_segment(header, segment, *cr3);
 		else
@@ -216,7 +216,7 @@ void init_gdt()
 	gdt_set_entry(SEG_KDATA, S_LIM, S_BASE, SA_DATA_DEF, SF_DEF);
 	gdt_set_entry(SEG_UCODE, S_LIM, S_BASE, SA_CODE_DEF | SA_USER, SF_DEF);
 	gdt_set_entry(SEG_UDATA, S_LIM, S_BASE, SA_DATA_DEF | SA_USER, SF_DEF);
-	gdt_set_tss_entry(sizeof(struct tss) - 1, (U64)&tss, TA_DEF, 0);
+	gdt_set_tss_entry(sizeof(struct tss) - 1, (u64)&tss, TA_DEF, 0);
 }
 
 void init_tss(void* stack_top)
@@ -224,7 +224,7 @@ void init_tss(void* stack_top)
 	// TODO
 	// set up TSS for TA-32E
 	loader_memset(&tss, 0, sizeof(tss));
-	tss.rsp0 = (U64)stack_top;
+	tss.rsp0 = (u64)stack_top;
 }
 
 /*/  
@@ -235,11 +235,11 @@ void init_ia32e_registers(void* cr3)
 	// TODO: check if CPU supports 64 bits
 	// not that urgent, as the kernel will not work anyway in leg/compat mode
 
-	U64 tmp;
-	U64 pdbr_addr = (U64)cr3;
+	u64 tmp;
+	u64 pdbr_addr = (u64)cr3;
 
 	struct gdtr reg;
-	U16 tss_selector = SEG_TSS_BASE << 3;
+	u16 tss_selector = SEG_TSS_BASE << 3;
 
 	load_gdt_register(&reg, &gdt);
 
@@ -268,7 +268,7 @@ void init_ia32e_registers(void* cr3)
 void init_jump_pointer(struct far_ptr* ret_ptr)
 {
 	ret_ptr->sel = SEG_KCODE * 0x8;
-	ret_ptr->location = (U32)KERNEL_ENTRY_STUB_NC;
+	ret_ptr->location = (u32)KERNEL_ENTRY_STUB_NC;
 }
 
 #endif

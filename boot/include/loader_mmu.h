@@ -4,8 +4,8 @@
 #include <multiboot.h>
 
 struct far_ptr {
-	U32 location; // RIP in 64-bit mode, IP in 16-bit mode
-	U16 sel;      // CS value (16-bit)
+	u32 location; // RIP in 64-bit mode, IP in 16-bit mode
+	u16 sel;      // CS value (16-bit)
 } PACK;
 
 void init_gdt();

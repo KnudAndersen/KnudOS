@@ -5,9 +5,9 @@
 
 // TODO: fast memset
 
-void loader_memset(void* a, char ch, U32 n)
+void loader_memset(void* a, char ch, u32 n)
 {
-	U8* p = (U8*)a;
+	u8* p = (u8*)a;
 	while (n--) {
 		*p++ = ch;
 	}

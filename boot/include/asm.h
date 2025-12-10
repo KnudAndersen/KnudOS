@@ -9,12 +9,12 @@ static inline void load_gdt_register(struct gdtr* reg, struct gdt* gdt)
 {
 	*reg = (struct gdtr){
 		sizeof(struct gdt) - 1,
-		(UPTR)gdt,
+		(uintptr_t)gdt,
 	};
 	asm volatile("lgdt %0" : : "m"(*reg) :);
 }
 
-static inline void load_task_register(U16 selector)
+static inline void load_task_register(u16 selector)
 {
 	asm volatile("mov ax, %0\n\t"
 	             "ltr ax"
@@ -31,7 +31,7 @@ enum ctrl_reg {
 	CR4,
 };
 
-static inline void write_ctrl_reg(enum ctrl_reg reg, U32 val)
+static inline void write_ctrl_reg(enum ctrl_reg reg, u32 val)
 {
 	switch (reg) {
 	case CR0:
@@ -54,9 +54,9 @@ static inline void write_ctrl_reg(enum ctrl_reg reg, U32 val)
 	};
 }
 
-static inline void read_ctrl_reg(enum ctrl_reg reg, U64* ret)
+static inline void read_ctrl_reg(enum ctrl_reg reg, u64* ret)
 {
-	U32 tmp;
+	u32 tmp;
 	switch (reg) {
 	case CR0:
 		asm volatile("mov %0, cr0" : "=r"(tmp) : : "memory");
@@ -76,17 +76,17 @@ static inline void read_ctrl_reg(enum ctrl_reg reg, U64* ret)
 	*ret = tmp;
 }
 
-static inline void write_msr_register(U32 msr, U64 val)
+static inline void write_msr_register(u32 msr, u64 val)
 {
-	U32 high = (val >> 32) & 0xFFFFFFFF;
-	U32 low = val & 0xFFFFFFFF;
+	u32 high = (val >> 32) & 0xFFFFFFFF;
+	u32 low = val & 0xFFFFFFFF;
 	asm volatile("wrmsr" : : "c"(msr), "d"(high), "a"(low) : "memory");
 }
 
-static inline void read_msr_register(U32 msr, U64* ret)
+static inline void read_msr_register(u32 msr, u64* ret)
 {
-	U32 high, low;
+	u32 high, low;
 	asm volatile("rdmsr\n\t" : "=d"(high), "=a"(low) : "c"(msr) :);
-	*ret = ((U64)high << 32) | low;
+	*ret = ((u64)high << 32) | low;
 }
 #endif
