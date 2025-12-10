@@ -20,7 +20,7 @@
 #define NULL           ((void*)0)
 
 // GLOBAL METHODS
-#define MAKE_PTR(ptr)      ((void*)(UPTR)(ptr))
+#define MAKE_PTR(ptr)      ((void*)(uintptr_t)(ptr))
 #define CEIL_DIV(val, div) (((val) + (div) - 1) / (div))
 
 // X86 GENERAL

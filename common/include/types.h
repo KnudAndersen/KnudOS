@@ -4,35 +4,32 @@
 #include <stdint.h>
 #include <params.h>
 // level 0 types
-typedef uint8_t U8;
-typedef uint16_t U16;
-typedef uint32_t U32;
-typedef uint64_t U64;
-typedef int8_t I8;
-typedef int16_t I16;
-typedef int32_t I32;
-typedef int64_t I64;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
 
-typedef uint64_t SIZE_T;
-typedef char CHAR;
-typedef uintptr_t UPTR;
-typedef void VOID;
+typedef uint64_t size_t;
 
 // level 1 types
 
 typedef struct page_t {
-	U8 bytes[PAGE_SIZE];
+	u8 bytes[PAGE_SIZE];
 } page_t;
 
 typedef struct page_table_t {
-	U64 entries[PTE_NUM];
+	u64 entries[PTE_NUM];
 } page_table_t;
 
 typedef struct mb_mod {
-	U32 mod_start;
-	U32 mod_end;
-	U32 str;
-	U32 reserved;
+	u32 mod_start;
+	u32 mod_end;
+	u32 str;
+	u32 reserved;
 } mb_mod;
 
 #endif

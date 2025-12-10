@@ -7,12 +7,12 @@
 // X86 SEGMENTS
 // (figure 3-8)
 typedef struct seg_desc {
-	U16 lim_15_0;
-	U16 base_15_0;
-	U8 base_23_16;
-	U8 access;
-	U8 flag_lim_19_16;
-	U8 base_31_24;
+	u16 lim_15_0;
+	u16 base_15_0;
+	u8 base_23_16;
+	u8 access;
+	u8 flag_lim_19_16;
+	u8 base_31_24;
 } PACK seg_desc;
 
 typedef enum {
@@ -70,14 +70,14 @@ typedef enum {
 // X86 64-BIT TSS DESCRIPTOR
 // (figure 7-4)
 typedef struct tss64_desc {
-	U16 lim_15_0;
-	U16 base_15_0;
-	U8 base_23_16;
-	U8 access;
-	U8 flag_lim_19_16;
-	U8 base_31_24;
-	U32 base_63_32;
-	U32 reserved;
+	u16 lim_15_0;
+	u16 base_15_0;
+	u8 base_23_16;
+	u8 access;
+	u8 flag_lim_19_16;
+	u8 base_31_24;
+	u32 base_63_32;
+	u32 reserved;
 } PACK tss64_desc;
 
 // X86 IA-32e SYSTEM ACCESS BYTE
@@ -99,21 +99,21 @@ typedef struct tss64_desc {
 #define TF_DEF  (TF_AVL /* | TF_GRAN */)
 
 struct tss {
-	U32 reserved1;
-	U64 rsp0;
-	U64 rsp1;
-	U64 rsp2;
-	U64 reserved2;
-	U64 ist1;
-	U64 ist2;
-	U64 ist3;
-	U64 ist4;
-	U64 ist5;
-	U64 ist6;
-	U64 ist7;
-	U64 reserved3;
-	U16 reserved4;
-	U16 iomap_baseaddr;
+	u32 reserved1;
+	u64 rsp0;
+	u64 rsp1;
+	u64 rsp2;
+	u64 reserved2;
+	u64 ist1;
+	u64 ist2;
+	u64 ist3;
+	u64 ist4;
+	u64 ist5;
+	u64 ist6;
+	u64 ist7;
+	u64 reserved3;
+	u16 reserved4;
+	u16 iomap_baseaddr;
 } PACK;
 // X86 GDT
 
@@ -128,8 +128,8 @@ struct gdt {
 #define SEG_SEL_IDX(n) ((n) << 3)
 
 struct gdtr {
-	U16 limit;
-	U32 base;
+	u16 limit;
+	u32 base;
 } PACK;
 
 // X86 PAGING (FOR IA32E)
