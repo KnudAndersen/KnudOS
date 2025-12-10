@@ -4,7 +4,7 @@ SRC_64_RAW_EXTNS:=c ld S
 
 TARGET_32:=i686-elf
 TARGET_64:=x86_64-elf
-CROSS_DIR:=./cross
+CROSS_DIR:=./.cross
 
 CC_32:=$(shell find $(CROSS_DIR) -name '$(TARGET_32)-gcc')
 CC_64:=$(shell find $(CROSS_DIR) -name '$(TARGET_64)-gcc')
@@ -21,7 +21,6 @@ AS_64:=$(AS_32)
 
 LINK_32:=$(CC_32)
 LINK_64:=$(CC_64)
-
 PROJECT_ROOT=.
 BUILD_ROOT:=$(PROJECT_ROOT)/build
 SRC_32_ROOT=$(PROJECT_ROOT)/boot
@@ -42,7 +41,7 @@ INCLUDE_32 += $(addprefix -I,$(shell find $(SRC_32_ROOT) -type d -name 'include'
 INCLUDE_64:= -I$(COMMON_ROOT)/include
 INCLUDE_64 += $(addprefix -I,$(shell find $(SRC_64_ROOT) -type d -name 'include'))
 
-CPPFLAGS_32:=$(INCLUDE_32) -P 
+CPPFLAGS_32:=$(INCLUDE_32) -P
 CPPFLAGS_64:=$(INCLUDE_64) -P
 AFLAGS_32:=-felf32 -F dwarf -g
 AFLAGS_64:=-felf64 -F dwarf -g
@@ -53,7 +52,10 @@ LFLAGS_64:=-ffreestanding -nostdlib -static -lgcc
 
 SRC_32_PP_IN = $(shell find $(SRC_32_ROOT) -name '*.$(PP_EXTN)')
 SRC_32_PP_OUT = $(patsubst $(SRC_32_ROOT)/%.$(PP_EXTN),$(SRC_32_GEN_ROOT)/%,$(SRC_32_PP_IN))
-SRC_32_RAW_IN = $(shell find $(SRC_32_ROOT) -type f $(foreach tmp,$(SRC_32_RAW_EXTNS),-name '*.$(tmp)' -or) -not -name '*')  
+SRC_32_RAW_IN = $(shell find $(SRC_32_ROOT) \
+							-type f $(foreach tmp,$(SRC_32_RAW_EXTNS),-name '*.$(tmp)' -or) \
+							-not -name '*')
+
 SRC_32_RAW_OUT = $(patsubst $(SRC_32_ROOT)/%,$(SRC_32_GEN_ROOT)/%,$(SRC_32_RAW_IN))
 SRC_32_ALL = $(SRC_32_PP_OUT) $(SRC_32_RAW_OUT)
 OBJ_32_ALL = $(patsubst $(SRC_32_GEN_ROOT)/%,$(BIN_32_ROOT)/%.32.o,$(filter %.c %.S,$(SRC_32_ALL)))
@@ -65,22 +67,15 @@ SRC_64_RAW_OUT = $(patsubst $(SRC_64_ROOT)/%,$(SRC_64_GEN_ROOT)/%,$(SRC_64_RAW_I
 SRC_64_ALL = $(SRC_64_PP_OUT) $(SRC_64_RAW_OUT)
 OBJ_64_ALL = $(patsubst $(SRC_64_GEN_ROOT)/%,$(BIN_64_ROOT)/%.64.o,$(filter %.c %.S,$(SRC_64_ALL)))
 
-CLANG_FLAGS_FILE = $(PROJECT_ROOT)/compile_flags.txt
-
-#TODO: preprocess common if necessary
-
 #main targets
 LOADER_BIN := $(BIN_32_ROOT)/load_32.BIN
 KERNEL_BIN := $(BIN_64_ROOT)/kernel.BIN
 
-.PHONY: all preprocess clean clang_format
+.PHONY: all preprocess clean
 
-all: $(ISO_IMG) 
+all: $(ISO_IMG)
 
 preprocess: $(SRC_32_ALL) $(SRC_64_ALL)
-
-clang_format:
-	find $(PROJECT_ROOT) -type d -name 'include' -printf "-I%p\n" | sort > $(CLANG_FLAGS_FILE)
 
 $(LOADER_BIN): preprocess $(OBJ_32_ALL)
 	$(eval SCRIPT = $(strip $(word 1,$(filter %.ld,$(SRC_32_ALL)))))
@@ -90,7 +85,7 @@ $(KERNEL_BIN): preprocess $(OBJ_64_ALL)
 	$(eval SCRIPT = $(strip $(word 1,$(filter %.ld,$(SRC_64_ALL)))))
 	$(LINK_64) $(LFLAGS_64) -T '$(SCRIPT)' $(OBJ_64_ALL) -o $@ -lgcc
 
-# get sources 
+# get sources
 $(SRC_32_GEN_ROOT)/%: $(SRC_32_ROOT)/%
 	mkdir -p $(dir $@)
 	cp $< $@
@@ -137,7 +132,7 @@ $(BIN_64_ROOT)/%.S.64.o: $(SRC_64_GEN_ROOT)/%.S
 $(ISO_IMG): $(GRUB_CFG) $(LOADER_BIN) $(KERNEL_BIN)
 	cp $(LOADER_BIN) $(ISO_ROOT)/boot
 	cp $(KERNEL_BIN) $(ISO_ROOT)/boot
-	/usr/bin/grub-mkrescue $(ISO_ROOT) -o $@	
+	/usr/bin/grub-mkrescue $(ISO_ROOT) -o $@
 
 # load grub config into iso
 $(GRUB_CFG): $(LOADER_BIN) $(KERNEL_BIN)
