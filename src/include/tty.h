@@ -2,14 +2,14 @@
 #define TTY_H
 #include <types.h>
 
-#define TTY_KIND_VGA (1)
-
-typedef void tty_putchar_func(U8);
+#define TTY_KIND_VGA  (1)
+#define TTY_TABLENGTH (4)
+typedef void tty_putchar_func(char);
 
 struct tty {
 	tty_putchar_func* write_func;
 };
 
-void init_tty(U32 kind, struct tty* tty);
+void init_tty(u32 kind, struct tty* tty);
 
 #endif

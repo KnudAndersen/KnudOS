@@ -18,7 +18,7 @@ enum VGA_COLORS {
 #define VGA_BG_DEF   (VGA_BLACK)
 #define VGA_ATTR_DEF ((VGA_BG_DEF < 4) | VGA_FG_DEF)
 
-void vga_advance_cursor(U32* cursor);
-void vga_putchar(U8 ch);
+void vga_advance_cursor(u32* cursor);
+void vga_putchar(char ch);
 
 #endif

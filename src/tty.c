@@ -1,7 +1,7 @@
 #include <tty.h>
 #include <vga.h>
 
-void init_tty(U32 kind, struct tty* tty)
+void init_tty(u32 kind, struct tty* tty)
 {
 	switch (kind) {
 		;
