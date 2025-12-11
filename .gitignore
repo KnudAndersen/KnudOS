@@ -5,4 +5,11 @@
 compile_flags.txt
 compile_commands.json
 compile_flags.txt.OLD
+.clangd
 .cache
+# these are CPP files:
+boot/entry.S
+boot/loader.ld
+src/entry.S
+src/kernel_link.ld
+

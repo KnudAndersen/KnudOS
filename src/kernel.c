@@ -6,15 +6,16 @@
 #include <tty.h>
 #include <io.h>
 #include <vga.h>
+#include <asm.h>
 
 struct tty global_tty;
 
-void kernel_main(mb_info* mbi_paddr)
+void kernel_main(mb_info* mbi_paddr, uintptr_t loader_end)
 {
 	init_tty(TTY_KIND_VGA, &global_tty);
-	printf("hello!, yo %Xthis is somet text", 0x1234);
-	// init_pmm(mbi_paddr, (void*)KSTACK_HI_NTH(0));
-	asm volatile("hlt");
+	init_pmm(mbi_paddr, loader_end);
 
+	while (1)
+		asm volatile("hlt");
 	return;
 }

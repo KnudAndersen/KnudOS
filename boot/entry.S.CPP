@@ -34,6 +34,8 @@ boot_entry:
     call loader_main
     
     mov ebx, [multiboot_info]
+    extern __linker_loader_end
+    mov ecx, __linker_loader_end
     jmp far [eax]
 
 err_inf:

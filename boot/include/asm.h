@@ -1,5 +1,5 @@
-#ifndef ASM_H
-#define ASM_H
+#ifndef BOOT_ASM_H
+#define BOOT_ASM_H
 
 #include <types.h>
 #include <mmu.h>
@@ -34,23 +34,23 @@ enum ctrl_reg {
 static inline void write_ctrl_reg(enum ctrl_reg reg, u32 val)
 {
 	switch (reg) {
-	case CR0:
-		asm volatile("mov cr0, %0" : : "r"(val) : "memory");
-		break;
-	case CR1:
-		asm volatile("mov cr1, %0" : : "r"(val) : "memory");
-		break;
-	case CR2:
-		asm volatile("mov cr2, %0" : : "r"(val) : "memory");
-		break;
-	case CR3:
-		asm volatile("mov cr3, %0" : : "r"(val) : "memory");
-		break;
-	case CR4:
-		asm volatile("mov cr4, %0" : : "r"(val) : "memory");
-		break;
-	default:
-		break;
+		case CR0:
+			asm volatile("mov cr0, %0" : : "r"(val) : "memory");
+			break;
+		case CR1:
+			asm volatile("mov cr1, %0" : : "r"(val) : "memory");
+			break;
+		case CR2:
+			asm volatile("mov cr2, %0" : : "r"(val) : "memory");
+			break;
+		case CR3:
+			asm volatile("mov cr3, %0" : : "r"(val) : "memory");
+			break;
+		case CR4:
+			asm volatile("mov cr4, %0" : : "r"(val) : "memory");
+			break;
+		default:
+			break;
 	};
 }
 
@@ -58,20 +58,20 @@ static inline void read_ctrl_reg(enum ctrl_reg reg, u64* ret)
 {
 	u32 tmp;
 	switch (reg) {
-	case CR0:
-		asm volatile("mov %0, cr0" : "=r"(tmp) : : "memory");
-		break;
-	case CR2:
-		asm volatile("mov %0, cr2" : "=r"(tmp) : : "memory");
-		break;
-	case CR3:
-		asm volatile("mov %0, cr3" : "=r"(tmp) : : "memory");
-		break;
-	case CR4:
-		asm volatile("mov %0, cr4" : "=r"(tmp) : : "memory");
-		break;
-	default:
-		break;
+		case CR0:
+			asm volatile("mov %0, cr0" : "=r"(tmp) : : "memory");
+			break;
+		case CR2:
+			asm volatile("mov %0, cr2" : "=r"(tmp) : : "memory");
+			break;
+		case CR3:
+			asm volatile("mov %0, cr3" : "=r"(tmp) : : "memory");
+			break;
+		case CR4:
+			asm volatile("mov %0, cr4" : "=r"(tmp) : : "memory");
+			break;
+		default:
+			break;
 	};
 	*ret = tmp;
 }

@@ -1,7 +1,7 @@
 #include <types.h>
 
 // I have bits 0 & 1 of flags set
-typedef struct mb_info {
+typedef struct {
 	u32 flags;
 	u32 mem_lower;
 	u32 mem_upper;
@@ -36,7 +36,25 @@ typedef struct mb_info {
 #define MBI_FLAG_CMDLINE   (1 << 2)
 #define MBI_FLAG_MODS      (1 << 3)
 #define MBI_FLAG_MMAP      (1 << 6)
-
 #define MBI_HAS_MEM(info)  (!!((info)->flags & MBI_FLAG_MEM))
 #define MBI_HAS_MODS(info) (!!((info)->flags & MBI_FLAG_MODS))
 #define MBI_HAS_MMAP(info) (!!((info)->flags & MBI_FLAG_MMAP))
+
+typedef struct {
+	u32 size;
+	u64 base_addr;
+	u64 length;
+	u32 type;
+} PACK mb_mmap_entry;
+
+#define MB_MMAP_AVAILABLE (1)
+#define MB_MMAP_ACPI      (3)
+#define MB_MMAP_RESERVED  (4)
+#define MB_MMAP_DEFECTIVE (5)
+
+typedef struct {
+	u32 mod_start;
+	u32 mod_end;
+	u32 string;
+	u32 reserved;
+} PACK mb_module;

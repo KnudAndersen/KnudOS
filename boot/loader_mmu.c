@@ -10,7 +10,7 @@
 #include <asm.h>
 #include "/usr/include/elf.h"
 
-#define BOOT_PAGES_MAX (20)
+#define BOOT_PAGES_MAX (500)
 #define OPT_ELF_FLAGS  (1 << 0)
 #define OPT_X86_FLAGS  (1 << 1)
 #define OPT_PHYS_ALLOC (1 << 2)
@@ -70,6 +70,9 @@ static void* alloc_boot_page()
 {
 	static u32 unused = 0;
 	if (unused >= BOOT_PAGES_MAX) {
+		while (1) {
+			asm volatile("hlt");
+		}
 		halt_forever();
 		return NULL;
 	}
@@ -175,16 +178,16 @@ void init_kernel(mb_info* info, void** cr3)
 	if (*cr3 == NULL)
 		halt_forever();
 
-	u64 bytes = (u64)&__linker_loader_end - EXTMEM;
+	u64 bytes = (u64)&__linker_loader_end; //  - EXTMEM;
 	u64 flags = X86_READ_WRITE | X86_PRESENT;
-	u64 base_addr = EXTMEM;
 
-	map_page_range(base_addr, base_addr, bytes, flags, OPT_X86_FLAGS, *cr3);
+	// identity map EXTMEM + loader program
+	map_page_range(0, 0, bytes, flags, OPT_X86_FLAGS, *cr3);
 
-	map_page_range(0, 0, 2 * MiB, flags, OPT_X86_FLAGS, *cr3);
+	// map_page_range(base_addr, base_addr, bytes, flags, OPT_X86_FLAGS, *cr3);
 
-	map_page_range(KSTACK_LO_NTH(0), (u64)NULL, KSTACK_SIZE, flags,
-	               OPT_X86_FLAGS | OPT_PHYS_ALLOC, *cr3);
+	map_page_range(KSTACK_LO_NTH(0), 0, KSTACK_SIZE, flags, OPT_X86_FLAGS | OPT_PHYS_ALLOC,
+	               *cr3);
 
 	if (info->mods_count != 1)
 		halt_forever();

@@ -34,24 +34,24 @@ void vga_advance_cursor(u32* cursor)
 	}
 }
 
-void vga_putchar(u8 ch)
+void vga_putchar(char ch)
 {
 	volatile u16* mmio = VGA_MMIO;
 	switch (ch) {
-	case '\t':
-		for (u8 i = 0; i < TTY_TABLENGTH; i++)
-			vga_putchar(' ');
-		break;
-	case '\n':
-		vga_cursor += (VGA_COLS - 1 - (vga_cursor % VGA_COLS));
-		vga_advance_cursor(&vga_cursor);
-		break;
-	case '\0':
-		break;
-	default:
-		virtual_screen[vga_cursor] = (VGA_ATTR_DEF << 8) | ch;
-		mmio[vga_cursor] = (VGA_ATTR_DEF << 8) | ch;
-		vga_advance_cursor(&vga_cursor);
-		break;
+		case '\t':
+			for (u8 i = 0; i < TTY_TABLENGTH; i++)
+				vga_putchar(' ');
+			break;
+		case '\n':
+			vga_cursor += (VGA_COLS - 1 - (vga_cursor % VGA_COLS));
+			vga_advance_cursor(&vga_cursor);
+			break;
+		case '\0':
+			break;
+		default:
+			virtual_screen[vga_cursor] = (VGA_ATTR_DEF << 8) | ch;
+			mmio[vga_cursor] = (VGA_ATTR_DEF << 8) | ch;
+			vga_advance_cursor(&vga_cursor);
+			break;
 	}
 }

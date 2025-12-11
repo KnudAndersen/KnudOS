@@ -1,6 +1,9 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
+// HARDWARE/MEMORY
+#define MAX_PHYS_RAM (8ull * GiB)
+
 // X86 REGISTERS
 #define CR4_PGE        (1 << 7)
 #define CR4_PAE        (1ULL << 5)
