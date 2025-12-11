@@ -10,7 +10,7 @@
 #include <asm.h>
 #include "/usr/include/elf.h"
 
-#define BOOT_PAGES_MAX (500)
+#define BOOT_PAGES_MAX (80)
 #define OPT_ELF_FLAGS  (1 << 0)
 #define OPT_X86_FLAGS  (1 << 1)
 #define OPT_PHYS_ALLOC (1 << 2)
@@ -126,7 +126,7 @@ static void boot_map_page(u64 virt, u64 phys, u64 flags, u8 option, void* cr3)
 	page_table_t* pdt = get_next_table(pdpt, pdpt_index);
 	page_table_t* pt = get_next_table(pdt, pdt_index);
 
-	pt->entries[pt_index] = (u64)phys | flags | X86_PRESENT;
+	pt->entries[pt_index] = (u64)paddr | flags | X86_PRESENT;
 }
 
 static void map_page_range(u64 virt_base, u64 phys_base, u64 bytes, u64 flags, u8 option, void* cr3)

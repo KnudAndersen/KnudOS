@@ -1,9 +1,14 @@
 #include <io.h>
 #include <str.h>
 
-extern struct tty global_tty;
+const struct tty* base_tty;
 
 #define BUF_SIZE (20)
+
+void init_io(const struct tty* tty)
+{
+	base_tty = tty;
+}
 
 static int format_numeric(char buf[BUF_SIZE], u64 val, int base)
 {
@@ -74,6 +79,6 @@ void printf(const char* str, ...)
 {
 	va_list ap;
 	va_start(ap, str);
-	tprintf(&global_tty, str, ap);
+	tprintf(base_tty, str, ap);
 	va_end(ap);
 }

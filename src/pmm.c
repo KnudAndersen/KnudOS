@@ -16,6 +16,7 @@ static void pmm_set_used(uintptr_t page);
 static void pmm_set_unused(uintptr_t page);
 static void pmm_free_range(uintptr_t base, size_t size);
 static void pmm_free_range(uintptr_t base, size_t size);
+static int pmm_is_free(size_t row, size_t col);
 
 // DESC: allocates a page of physical memory
 uintptr_t pmm_alloc()
@@ -25,7 +26,7 @@ uintptr_t pmm_alloc()
 	uintptr_t found = 0;
 	for (j = 0; j < PMM_ROWS; j++) {
 		for (i = 0; i < PMM_COLS; i++) {
-			if (pmm_bitmap[j] & (1ull << (PMM_COLS - 1 - i))) {
+			if (pmm_is_free(j, i)) {
 				found = PAGE_SIZE * (j * PMM_COLS + i);
 				break;
 			}
@@ -50,6 +51,15 @@ void pmm_free(uintptr_t page)
 	pmm_set_unused(page);
 }
 
+static int pmm_is_free(size_t row, size_t col)
+{
+	if (row * PMM_COLS + col >= MAX_PHYS_RAM / PAGE_SIZE)
+		return 0;
+
+	u64 bit = 1ull << (PMM_COLS - 1 - col);
+	return !(pmm_bitmap[row] & bit);
+}
+
 static void pmm_set_used(uintptr_t page)
 {
 	if (page >= MAX_PHYS_RAM)
@@ -57,13 +67,6 @@ static void pmm_set_used(uintptr_t page)
 
 	u64 page_index = page / PAGE_SIZE;
 	u64 col = page_index % PMM_COLS;
-
-	if (page_index / PMM_COLS >= PMM_ROWS) {
-		size_t left = page_index / PMM_COLS;
-		size_t right = PMM_ROWS;
-		while (1)
-			asm volatile("hlt");
-	}
 
 	u64 bit = 1ull << (PMM_COLS - 1 - col);
 	pmm_bitmap[page_index / PMM_COLS] |= bit;
@@ -147,10 +150,9 @@ static void reserve_loader(uintptr_t loader_end)
 
 void init_pmm(mb_info* info, uintptr_t loader_end)
 {
-	for (int i = 0; i < PMM_ROWS; i++) {
-		pmm_bitmap[i] = 0xFFFFFFFFFFFFFFFF;
-	}
+	pmm_reserve_range(0, MAX_PHYS_RAM);
 	free_available_ram(info);
+	pmm_reserve_range(0, EXTMEM);
 	reserve_loader(loader_end);
 	reserve_modules(info);
 }

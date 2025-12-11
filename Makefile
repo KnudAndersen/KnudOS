@@ -121,9 +121,12 @@ $(GRUB_CFG): $(LOADER_BIN) $(KERNEL_BIN)
 
 # launch & listen on localhost for GDB
 qemu: $(ISO_IMG)
-	qemu-system-x86_64 -m 8G -cdrom $(ISO_IMG) -gdb tcp::26000 -S
-
-
+	qemu-system-x86_64 \
+		-cdrom $(ISO_IMG) \
+		-m 8G \
+		-cpu qemu64 \
+		-gdb tcp::26000 \
+		-S
 clean:
 	rm -rf $(BUILD_ROOT)
 
