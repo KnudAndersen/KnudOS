@@ -1,5 +1,5 @@
 #include <io.h>
-#include <str.h>
+#include <string.h>
 
 const struct tty* base_tty;
 

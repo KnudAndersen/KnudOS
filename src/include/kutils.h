@@ -3,7 +3,6 @@
 
 static inline void halt_forever()
 {
-	asm volatile("cli");
 	while (1)
 		asm volatile("hlt");
 }

@@ -1,5 +1,5 @@
 #include <vga.h>
-#include <str.h>
+#include <string.h>
 #include <tty.h>
 
 u32 vga_cursor = 0;

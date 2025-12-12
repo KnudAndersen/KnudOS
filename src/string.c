@@ -1,4 +1,4 @@
-#include <str.h>
+#include <string.h>
 
 size_t strlen(char* str)
 {

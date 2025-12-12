@@ -2,7 +2,7 @@
 #include <pmm.h>
 #include <io.h>
 #include <memlayout.h>
-#include <asm.h>
+#include <kutils.h>
 
 #define PMM_MARK_USED (0)
 #define PMM_MARK_FREE (1)
@@ -36,11 +36,8 @@ uintptr_t pmm_alloc()
 	}
 
 	// out of physical memory
-	if (!found) {
-		while (1) {
-			asm volatile("hlt");
-		}
-	}
+	if (!found)
+		halt_forever();
 
 	pmm_set_used(found);
 	return found;
@@ -78,12 +75,7 @@ static void pmm_set_unused(uintptr_t page)
 		return;
 	u64 page_index = page / PAGE_SIZE;
 	u64 col = page_index % PMM_COLS;
-	if (page_index / PMM_COLS >= PMM_ROWS) {
-		size_t left = page_index / PMM_COLS;
-		size_t right = PMM_ROWS;
-		while (1)
-			asm volatile("hlt");
-	}
+
 	u64 bit = 1ull << (PMM_COLS - 1 - col);
 	pmm_bitmap[page_index / PMM_COLS] &= ~bit;
 }
