@@ -76,7 +76,7 @@ OBJ_64_ALL = $(patsubst $(SRC_64_GEN_ROOT)/%,$(BIN_64_ROOT)/%.64.o,$(filter %.c 
 LOADER_BIN := $(BIN_32_ROOT)/load_32.BIN
 KERNEL_BIN := $(BIN_64_ROOT)/kernel.BIN
 
-.PHONY: all preprocess clean
+.PHONY: all preprocess clean cpp
 
 all: $(ISO_IMG)
 
@@ -132,6 +132,7 @@ clean:
 
 # the CPP layer
 cpp: $(SRC_32_PP_OUT) $(SRC_64_PP_OUT)
+
 
 $(SRC_32_GEN_ROOT)/%: $(SRC_32_ROOT)/%.ld.$(PP_EXTN)
 	mkdir -p $(dir $@)

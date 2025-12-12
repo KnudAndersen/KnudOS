@@ -65,9 +65,9 @@ static void gdt_set_entry(u32 num, u32 lim, u32 base, u8 access, u8 flag)
 	};
 }
 
-page_t boot_pages[BOOT_PAGES_MAX] ALIGN_C(PAGE_SIZE);
 static void* alloc_boot_page()
 {
+	static page_t boot_pages[BOOT_PAGES_MAX] ALIGN_C(PAGE_SIZE);
 	static u32 unused = 0;
 	if (unused >= BOOT_PAGES_MAX) {
 		while (1) {
@@ -186,7 +186,7 @@ void init_kernel(mb_info* info, void** cr3)
 
 	// map_page_range(base_addr, base_addr, bytes, flags, OPT_X86_FLAGS, *cr3);
 
-	map_page_range(KSTACK_LO_NTH(0), 0, KSTACK_SIZE, flags, OPT_X86_FLAGS | OPT_PHYS_ALLOC,
+	map_page_range(KSTACK_NTH_LO(0), 0, KSTACK_SIZE, flags, OPT_X86_FLAGS | OPT_PHYS_ALLOC,
 	               *cr3);
 
 	if (info->mods_count != 1)

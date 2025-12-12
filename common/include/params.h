@@ -13,14 +13,11 @@
 #define MSR_EFER       (0xC0000080)
 #define EFER_LME       (1 << 8)
 
-// KERNEL GENERAL
-#define KSTACK_MAX     (20)
-#define KSTACK_SIZE    (4 * KiB)
-#define KSTACK_SIZE_NC (4096)
-#define KiB            (1024)
-#define MiB            (1024 * KiB)
-#define GiB            (1024 * MiB)
-#define NULL           ((void*)0)
+// GENERAL
+#define KiB  (1024)
+#define MiB  (1024 * KiB)
+#define GiB  (1024 * MiB)
+#define NULL ((void*)0)
 
 // GLOBAL METHODS
 #define MAKE_PTR(ptr)      ((void*)(uintptr_t)(ptr))

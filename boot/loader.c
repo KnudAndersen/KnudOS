@@ -2,13 +2,7 @@
 #define LOADER_C
 
 #include <loader_mmu.h>
-#include <params.h>
-#include <mmu.h>
-#include <types.h>
-#include <memlayout.h>
 #include <utils.h>
-
-// TODO: write a program which lets you set todo prios
 
 extern char boot_stack_hi[];
 
