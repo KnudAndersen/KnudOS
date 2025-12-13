@@ -1,9 +1,21 @@
 #include <vga.h>
 #include <string.h>
 #include <tty.h>
+#include <page_table.h>
+#include <vmm.h>
 
 u32 vga_cursor = 0;
 u16 virtual_screen[VGA_COLS * VGA_ROWS] = { 0 };
+
+// NOTE: assumes that page tables are identity mapped
+void vga_identity_map_mmio()
+{
+	u64 cr3 = pop_cr3();
+	uintptr_t vga_start = (uintptr_t)VGA_MMIO & ~(PAGE_SIZE);
+	uintptr_t vga_end = CEIL_DIV(vga_start + sizeof(virtual_screen), PAGE_SIZE) * PAGE_SIZE;
+	for (uintptr_t off = vga_start; off < vga_end; off += PAGE_SIZE)
+		x86_map_memory(off, off, cr3, VMM_OBJECT_FLAG_WRITE, 0);
+}
 
 void vga_shift_up(u16* virt, u32 num)
 {

@@ -13,8 +13,9 @@
 #define USER_SPACE_LO   (0x0000000000000000ull)
 
 // HIGHER HALF DIRECT MAP
-#define HHDM_LO (KERNEL_SPACE_LO + PADDING)
-#define HHDM_HI (HHDM_LO + MAX_PHYS_RAM)
+#define HHDM_LO   (KERNEL_SPACE_LO + PADDING)
+#define HHDM_HI   (HHDM_LO + MAX_PHYS_RAM)
+#define HHDM_VOFF (HHDM_LO)
 
 // KERNEL IMAGE (VIRTUAL, PHYSICAL)
 #define KERNEL_IMAGE_LO (HHDM_HI + PADDING)
@@ -23,6 +24,8 @@
 // KSTACK_REGION_LO -> [GUARD][STACK|GUARD][STACK|GUARD]...[STACK|GUARD] <- KSTACK_REGION_HI
 // KSTACK_NTH_LO(0) ----------^       (lowest byte of stack inclusive)
 // KSTACK_NTH_HI(0) ----------------^ (highest byte of stack exclusive, so first byte after stack)
+
+#define KSTACK_MAX_NUM   (2 * MAX_CPU_CORES)
 #define KSTACK_REGION_LO (KERNEL_IMAGE_LO + GUARD)
 #define KSTACK_SIZE      (8ull * KiB)
 #define KSTACK_SLOT      (KSTACK_SIZE + GUARD)

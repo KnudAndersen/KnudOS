@@ -9,8 +9,8 @@ extern char boot_stack_hi[];
 void* loader_main(u32 __multiboot_paddr)
 {
 	mb_info* info = MAKE_PTR(__multiboot_paddr);
-	void *cr3, *gdt, *tss;
 	static struct far_ptr ret_ptr;
+	void* cr3_paddr;
 
 	if (!MBI_HAS_MEM(info))
 		halt_forever();
@@ -19,13 +19,13 @@ void* loader_main(u32 __multiboot_paddr)
 	if (!MBI_HAS_MODS(info))
 		halt_forever();
 
-	init_kernel(info, &cr3);
+	init_kernel(info, &cr3_paddr);
 
 	init_gdt();
 
 	init_tss(boot_stack_hi);
 
-	init_ia32e_registers(cr3);
+	init_ia32e_registers(cr3_paddr);
 
 	init_jump_pointer(&ret_ptr);
 

@@ -2,11 +2,12 @@
 #define PARAMS_H
 
 // HARDWARE/MEMORY
-#define MAX_PHYS_RAM (8ull * GiB)
+#define MAX_PHYS_RAM  (8ull * GiB)
+#define MAX_CPU_CORES (8)
 
 // X86 REGISTERS
 #define CR4_PGE        (1 << 7)
-#define CR4_PAE        (1ULL << 5)
+#define CR4_PAE        (1ull << 5)
 #define CR0_PG         (1 << 31)
 #define CR3_PDBR_MASK  (0xFFFFFFFFFFFFF000)
 #define CR3_PDBR_SHIFT (12)
@@ -34,6 +35,12 @@
 #define MULTIBOOT_ALIGN    (1 << 0)
 #define MULTIBOOT_MMAP     (1 << 1)
 
+// extra identity map length for reserving early pages, e.g. reserving page tables for
+// higher half direct map in src/vmm.c
+#define BOOT_IDENTITY_MAP_EXTRA (20 * MiB)
+// this number controls the number of pages in the boot page resreve in loader image
+// it will need to grow if BOOT_IDENTITY_MAP_EXTRA is increased obviously
+#define BOOT_PAGES_MAX (3ull * 4096ull)
 // COMPILER MACROS
 #define ALIGN_C(val) __attribute__((aligned(val)))
 #define PACK         __attribute__((packed))

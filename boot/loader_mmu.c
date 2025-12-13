@@ -4,13 +4,12 @@
 #include <mmu.h>
 #include <types.h>
 #include <loader_mmu.h>
-#include <page_table.h>
 #include <utils.h>
 #include <memlayout.h>
+#include <multiboot.h>
 #include <asm.h>
 #include "/usr/include/elf.h"
 
-#define BOOT_PAGES_MAX (80)
 #define OPT_ELF_FLAGS  (1 << 0)
 #define OPT_X86_FLAGS  (1 << 1)
 #define OPT_PHYS_ALLOC (1 << 2)
@@ -68,7 +67,7 @@ static void gdt_set_entry(u32 num, u32 lim, u32 base, u8 access, u8 flag)
 static void* alloc_boot_page()
 {
 	static page_t boot_pages[BOOT_PAGES_MAX] ALIGN_C(PAGE_SIZE);
-	static u32 unused = 0;
+	static u64 unused = 0;
 	if (unused >= BOOT_PAGES_MAX) {
 		while (1) {
 			asm volatile("hlt");
@@ -170,28 +169,30 @@ static void elf_load_segment(Elf64_Ehdr* header, Elf64_Phdr* segment, void* cr3)
 	}
 }
 
-void init_kernel(mb_info* info, void** cr3)
+// TODO: make a common "for each mmap entry" function / macro
+void identity_map_available_ram(mb_info* info, void* cr3)
 {
-	// TODO check if valid elf
+	//	u64 bytes = (u64)&__linker_loader_end + BOOT_IDENTITY_MAP_EXTRA;
+	//	u64 flags = X86_READ_WRITE | X86_PRESENT;
+	char* ptr = (char*)(uintptr_t)info->mmap_addr;
+	char* end = ptr + info->mmap_length;
+	while (ptr < end) {
+		mb_mmap_entry* entry = (mb_mmap_entry*)ptr;
 
-	*cr3 = alloc_boot_page();
-	if (*cr3 == NULL)
-		halt_forever();
+		if (entry->type == MB_MMAP_AVAILABLE) {
+			u64 virt_base, phys_base, flags;
+			virt_base = phys_base = entry->base_addr;
+			flags = X86_PRESENT | X86_READ_WRITE;
+			map_page_range(virt_base, phys_base, entry->length, flags, OPT_X86_FLAGS,
+			               cr3);
+		}
 
-	u64 bytes = (u64)&__linker_loader_end; //  - EXTMEM;
-	u64 flags = X86_READ_WRITE | X86_PRESENT;
+		ptr += entry->size + sizeof(entry->size);
+	}
+}
 
-	// identity map EXTMEM + loader program
-	map_page_range(0, 0, bytes, flags, OPT_X86_FLAGS, *cr3);
-
-	// map_page_range(base_addr, base_addr, bytes, flags, OPT_X86_FLAGS, *cr3);
-
-	map_page_range(KSTACK_NTH_LO(0), 0, KSTACK_SIZE, flags, OPT_X86_FLAGS | OPT_PHYS_ALLOC,
-	               *cr3);
-
-	if (info->mods_count != 1)
-		halt_forever();
-
+void load_elf_modules(mb_info* info, void* cr3)
+{
 	mb_mod* iter = MAKE_PTR(info->mods_addr);
 	Elf64_Ehdr* header = MAKE_PTR(iter->mod_start);
 
@@ -203,11 +204,31 @@ void init_kernel(mb_info* info, void** cr3)
 
 	for (u32 seg = 0; seg < seg_num; seg++) {
 		if (segment->p_type == PT_LOAD)
-			elf_load_segment(header, segment, *cr3);
+			elf_load_segment(header, segment, cr3);
 		else
 			halt_forever();
 		segment++;
 	}
+}
+
+void init_kernel(mb_info* info, void** cr3)
+{
+	// TODO check if valid elf
+
+	*cr3 = alloc_boot_page();
+	if (*cr3 == NULL)
+		halt_forever();
+
+	identity_map_available_ram(info, *cr3);
+
+	// map init CPU's stack
+	map_page_range(KSTACK_NTH_LO(0), 0, KSTACK_SIZE, X86_READ_WRITE | X86_PRESENT,
+	               OPT_X86_FLAGS | OPT_PHYS_ALLOC, *cr3);
+
+	if (info->mods_count != 1)
+		halt_forever();
+
+	load_elf_modules(info, *cr3);
 }
 
 void init_gdt()

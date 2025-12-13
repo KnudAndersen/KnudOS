@@ -1,3 +1,6 @@
+#ifndef COMMON_MULTIBOOT_H
+#define COMMON_MULTIBOOT_H
+
 #include <types.h>
 
 // I have bits 0 & 1 of flags set
@@ -58,3 +61,5 @@ typedef struct {
 	u32 string;
 	u32 reserved;
 } PACK mb_module;
+
+#endif

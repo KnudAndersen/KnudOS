@@ -20,6 +20,12 @@ multiboot_info:
 dd 0
 
 section .text
+
+; PROPOGATED TO KERNEL
+; EBX, ECX, EDX => SYSV X86-64 CC src/entry.S.CPP
+extern loader_main
+; extern __linker_loader_end
+
 global boot_entry
 boot_entry:
 
@@ -31,12 +37,11 @@ boot_entry:
     mov ebp, boot_stack_hi
 
     push ebx
-    extern loader_main
     call loader_main
 
     mov ebx, [multiboot_info]
-    extern __linker_loader_end
-    mov ecx, __linker_loader_end
+    ; mov ecx, __linker_loader_end
+
     jmp far [eax]
 
 err_inf:

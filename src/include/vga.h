@@ -20,5 +20,6 @@ enum VGA_COLORS {
 
 void vga_advance_cursor(u32* cursor);
 void vga_putchar(char ch);
+void vga_identity_map_mmio();
 
 #endif

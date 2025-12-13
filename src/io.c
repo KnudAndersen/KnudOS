@@ -1,9 +1,10 @@
 #include <io.h>
 #include <string.h>
 
-const struct tty* base_tty;
-
+// TODO: properly do the math on this, use logarithms and upper bound
 #define BUF_SIZE (20)
+
+static const struct tty* base_tty;
 
 void init_io(const struct tty* tty)
 {

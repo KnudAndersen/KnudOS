@@ -134,9 +134,10 @@ struct gdtr {
 
 // X86 PAGING (FOR IA32E)
 // section 4.5
-
-#define X86_PRESENT      (1ULL << 0)
-#define X86_READ_WRITE   (1ULL << 1)
-#define X86_EXEC_DISABLE (1ULL << 63)
-#define X86_ADDR_MASK    (~(PAGE_SIZE - 1))
+// TODO: convert the prefix to specify x86-64
+#define X86_PRESENT      (1ull << 0)
+#define X86_READ_WRITE   (1ull << 1)
+#define X86_USER         (1ull << 2)
+#define X86_EXEC_DISABLE (1ull << 63)
+#define X86_ADDR_MASK    (0x000FFFFFFFFFF000ULL)
 #endif
