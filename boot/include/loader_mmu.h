@@ -12,7 +12,7 @@ void init_gdt();
 
 void init_tss(void* stack_top);
 
-void init_kernel(mb_info* info, void** cr3);
+void init_kernel(struct mb_info* info, void** cr3);
 
 void init_ia32e_registers(void* cr3);
 

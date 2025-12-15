@@ -2,6 +2,7 @@
 #include <params.h>
 #include <memlayout.h>
 #include <asm.h>
+#include <string.h>
 
 // MODULES
 #include <pmm.h>
@@ -12,19 +13,42 @@
 #include <cpuid.h>
 
 static struct tty global_tty;
-static vm_address_space addr_space;
+static struct vm_address_space addr_space;
+struct mb_preserved multiboot;
 
-void kernel_main(mb_info* info)
+// TODO: preserve more as needed
+void preserve_multiboot(struct mb_info* src, struct mb_preserved* dst_container)
 {
+	struct mb_info* dst = &dst_container->info;
+	struct mb_mmap_entry* mmap_dst = dst_container->mmap;
+	struct mb_mmap_entry* mmap_src = (void*)(uintptr_t)src->mmap_addr;
+	struct mb_module* mod_dst = dst_container->mods;
+	struct mb_module* mod_src = (void*)(uintptr_t)src->mods_addr;
+
+	memcpy(dst, src, sizeof(struct mb_info));
+	memcpy(mmap_dst, mmap_src, src->mmap_length);
+	memcpy(mod_dst, mod_src, src->mods_count * sizeof(struct mb_module));
+	// no longer in use
+	src->mmap_addr = 0;
+	src->mods_addr = 0;
+}
+
+void kernel_main(struct mb_info* info_ptr, uintptr_t loader_end)
+{
+	preserve_multiboot(info_ptr, &multiboot);
 	check_cpuid_features();
 
-	init_pmm(info);
+	// TODO: logging -> need to make tty/io not depend on pmm/vmm
+	init_pmm(&multiboot, loader_end);
+	init_vmm(&multiboot, VMM_KERNEL, &addr_space);
 
 	init_tty(TTY_KIND_VGA, &global_tty);
 	init_io(&global_tty);
-	// init_vmm(info, VMM_KERNEL, &addr_space);
 
 	printf("hello!\n");
+	uintptr_t test = pmm_alloc();
+	*(u64*)test = 3;
+
 	halt_forever();
 	return;
 }

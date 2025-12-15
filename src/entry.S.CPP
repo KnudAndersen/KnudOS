@@ -9,7 +9,7 @@ kernel_entry:
     mov rsp, KSTACK_NTH_HI_NC(0)
     mov rbp, KSTACK_NTH_HI_NC(0)
     mov rdi, rbx
-    ; mov rsi, rcx
+    mov rsi, rcx
     mov rax, kernel_main
     call rax
 err_loop:

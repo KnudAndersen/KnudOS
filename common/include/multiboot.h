@@ -4,7 +4,7 @@
 #include <types.h>
 
 // I have bits 0 & 1 of flags set
-typedef struct {
+struct mb_info {
 	u32 flags;
 	u32 mem_lower;
 	u32 mem_upper;
@@ -33,7 +33,7 @@ typedef struct {
 	u8 framebuffer_bpp;
 	u8 framebuffer_type;
 	u8 color_info[5];
-} mb_info;
+};
 
 #define MBI_FLAG_MEM       (1 << 0)
 #define MBI_FLAG_CMDLINE   (1 << 2)
@@ -43,23 +43,32 @@ typedef struct {
 #define MBI_HAS_MODS(info) (!!((info)->flags & MBI_FLAG_MODS))
 #define MBI_HAS_MMAP(info) (!!((info)->flags & MBI_FLAG_MMAP))
 
-typedef struct {
+struct mb_mmap_entry {
 	u32 size;
 	u64 base_addr;
 	u64 length;
 	u32 type;
-} PACK mb_mmap_entry;
+} PACK;
 
 #define MB_MMAP_AVAILABLE (1)
 #define MB_MMAP_ACPI      (3)
 #define MB_MMAP_RESERVED  (4)
 #define MB_MMAP_DEFECTIVE (5)
 
-typedef struct {
+struct mb_module {
 	u32 mod_start;
 	u32 mod_end;
 	u32 string;
 	u32 reserved;
-} PACK mb_module;
+} PACK;
+
+#define MAX_MMAP_ENTRIES (20)
+#define MAX_MODULES      (2)
+
+struct mb_preserved {
+	struct mb_info info;
+	struct mb_mmap_entry mmap[MAX_MMAP_ENTRIES];
+	struct mb_module mods[MAX_MODULES];
+};
 
 #endif

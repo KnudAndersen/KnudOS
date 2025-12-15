@@ -12,16 +12,17 @@
 #define VMM_OBJECT_FLAG_EXEC  (1 << 1)
 #define VMM_OBJECT_FLAG_USER  (1 << 2)
 
-typedef enum {
+enum vmm_type_t {
 	VMM_KERNEL,
 	VMM_USER,
-} vmm_type_t;
+};
 
-typedef struct vm_address_space {
+struct vm_address_space {
 	page_table_t* root;
 	link_list list_head;
-} vm_address_space;
+};
 
-void init_vmm(mb_info* info, vmm_type_t type, vm_address_space* addr_space);
+void init_vmm(struct mb_preserved* multiboot, enum vmm_type_t type,
+              struct vm_address_space* addr_space);
 
 #endif

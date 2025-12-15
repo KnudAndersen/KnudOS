@@ -7,6 +7,9 @@
 #include <pmm.h> // NEED PHYSICAL PAGES => PMM NEEDS TO BE INITIALIZED ASAP
 #include <mmu.h> // X86-SPECIFIC MACROS
 
+void x86_unmap_memory(u64 virt, uintptr_t root_paddr, u64 voff);
+void x86_unmap_memory_range(u64 virt, u64 n, uintptr_t root_paddr, u64 voff);
 void x86_map_memory(u64 virt, u64 phys, uintptr_t root_paddr, u64 vmm_flags, u64 voff);
+void x86_map_memory_range(u64 virt, u64 phys, u64 n, uintptr_t root_paddr, u64 vmm_flags, u64 voff);
 
 #endif

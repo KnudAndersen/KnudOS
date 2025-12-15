@@ -8,7 +8,7 @@ extern char boot_stack_hi[];
 
 void* loader_main(u32 __multiboot_paddr)
 {
-	mb_info* info = MAKE_PTR(__multiboot_paddr);
+	struct mb_info* info = MAKE_PTR(__multiboot_paddr);
 	static struct far_ptr ret_ptr;
 	void* cr3_paddr;
 

@@ -19,7 +19,7 @@ struct gdt gdt ALIGN_C(16);
 
 extern u64 __linker_loader_end;
 
-Elf64_Addr get_kernel_entry(mb_info* info)
+Elf64_Addr get_kernel_entry(struct mb_info* info)
 {
 	Elf64_Addr ret;
 	mb_mod* iter = MAKE_PTR(info->mods_addr);
@@ -170,19 +170,20 @@ static void elf_load_segment(Elf64_Ehdr* header, Elf64_Phdr* segment, void* cr3)
 }
 
 // TODO: make a common "for each mmap entry" function / macro
-void identity_map_available_ram(mb_info* info, void* cr3)
+void identity_map_available_ram(struct mb_info* info, void* cr3)
 {
 	//	u64 bytes = (u64)&__linker_loader_end + BOOT_IDENTITY_MAP_EXTRA;
 	//	u64 flags = X86_READ_WRITE | X86_PRESENT;
 	char* ptr = (char*)(uintptr_t)info->mmap_addr;
 	char* end = ptr + info->mmap_length;
 	while (ptr < end) {
-		mb_mmap_entry* entry = (mb_mmap_entry*)ptr;
+		struct mb_mmap_entry* entry = (struct mb_mmap_entry*)ptr;
 
 		if (entry->type == MB_MMAP_AVAILABLE) {
 			u64 virt_base, phys_base, flags;
 			virt_base = phys_base = entry->base_addr;
 			flags = X86_PRESENT | X86_READ_WRITE;
+			// TODO: consolidate this with the 64-bit page_table.c API's
 			map_page_range(virt_base, phys_base, entry->length, flags, OPT_X86_FLAGS,
 			               cr3);
 		}
@@ -191,7 +192,7 @@ void identity_map_available_ram(mb_info* info, void* cr3)
 	}
 }
 
-void load_elf_modules(mb_info* info, void* cr3)
+void load_elf_modules(struct mb_info* info, void* cr3)
 {
 	mb_mod* iter = MAKE_PTR(info->mods_addr);
 	Elf64_Ehdr* header = MAKE_PTR(iter->mod_start);
@@ -211,7 +212,7 @@ void load_elf_modules(mb_info* info, void* cr3)
 	}
 }
 
-void init_kernel(mb_info* info, void** cr3)
+void init_kernel(struct mb_info* info, void** cr3)
 {
 	// TODO check if valid elf
 
