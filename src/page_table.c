@@ -67,7 +67,7 @@ void x86_unmap_memory(u64 virt, uintptr_t root_paddr, u64 voff)
 	page_table_t* pt_vaddr = (page_table_t*)(pt_base_paddr + voff);
 	pt_vaddr->entries[ptoff] = 0;
 	// TODO: check with qemu info tlb
-	__asm__ volatile("invlpg [%0]" ::"r"(virt) : "memory");
+	asm volatile("invlpg [%0]" ::"r"(virt) : "memory");
 }
 
 // TODO: figure out best place to put x86_from_vmm_flags, vmm.h or page_table.h?
