@@ -1,6 +1,7 @@
 #include <types.h>
 #include <asm.h>
 #include <pmm.h>
+#include <vga.h>
 #include <memlayout.h>
 #include <vmm.h>
 #include <string.h>
@@ -19,11 +20,11 @@ void remove_boot_identity_mappings(struct mb_preserved* multiboot)
 
 	char* ptr = (char*)(uintptr_t)multiboot->mmap;
 	char* end = ptr + multiboot->info.mmap_length;
-	u32 i = 0;
 	while (ptr < end) {
 		struct mb_mmap_entry* entry = (struct mb_mmap_entry*)ptr;
 		if (entry->type == MB_MMAP_AVAILABLE) {
 			u64 virt = entry->base_addr;
+
 			if (virt + entry->length >= HHDM_HI)
 				halt_forever();
 			x86_unmap_memory_range(virt, entry->length, root_paddr, HHDM_VOFF);
@@ -59,7 +60,6 @@ void initialize_higher_half_direct_map(struct mb_preserved* multiboot)
 	}
 }
 // TODO: user space VMM support
-u32 test2 = 0x6969;
 void init_vmm(struct mb_preserved* multiboot, enum vmm_type_t type,
               struct vm_address_space* addr_space)
 {
@@ -68,9 +68,6 @@ void init_vmm(struct mb_preserved* multiboot, enum vmm_type_t type,
 
 	initialize_higher_half_direct_map(multiboot);
 	remove_boot_identity_mappings(multiboot);
-	u32 test = 0x123;
-	while (1)
-		asm volatile("hlt");
 
 	// 	uintptr_t root_paddr = pop_cr3();
 	// 	addr_space->list_head.next = addr_space->list_head.prev = NULL;

@@ -16,7 +16,6 @@ static struct tty global_tty;
 static struct vm_address_space addr_space;
 struct mb_preserved multiboot;
 
-// TODO: preserve more as needed
 void preserve_multiboot(struct mb_info* src, struct mb_preserved* dst_container)
 {
 	struct mb_info* dst = &dst_container->info;
@@ -38,16 +37,13 @@ void kernel_main(struct mb_info* info_ptr, uintptr_t loader_end)
 	preserve_multiboot(info_ptr, &multiboot);
 	check_cpuid_features();
 
-	// TODO: logging -> need to make tty/io not depend on pmm/vmm
+	// TODO: early logging -> need to make tty/io not depend on pmm
+	// Idea: add a "exclude region" feature to the boot identity map removal func
+	// 	 not that elegant though... figure this out later
 	init_pmm(&multiboot, loader_end);
 	init_vmm(&multiboot, VMM_KERNEL, &addr_space);
-
 	init_tty(TTY_KIND_VGA, &global_tty);
 	init_io(&global_tty);
-
-	printf("hello!\n");
-	uintptr_t test = pmm_alloc();
-	*(u64*)test = 3;
 
 	halt_forever();
 	return;

@@ -15,6 +15,9 @@ struct bitmap {
 	u64 data[PMM_ROWS];
 	uintptr_t start;
 	uintptr_t end;
+	size_t free;
+	// TODO initialize this sooner
+	size_t row_hint;
 };
 
 struct bitmap_container {
@@ -31,7 +34,6 @@ static int bitmap_is_free(struct bitmap* bitmap, size_t row, size_t col);
 static int pmm_reserve_range(uintptr_t base, size_t size);
 static int pmm_free_range(uintptr_t base, size_t size);
 
-// TODO: use hinting to optimize this
 uintptr_t pmm_alloc()
 {
 	int found = 0;
@@ -83,8 +85,19 @@ static int bitmap_is_free(struct bitmap* bitmap, size_t row, size_t col)
 static int bitmap_find_free_page(struct bitmap* bitmap, size_t* ret_row, size_t* ret_col)
 {
 	// TODO: double check this
+	if (bitmap->free == 0)
+		return 0;
 	size_t num_rows = CEIL_DIV(bitmap->end - bitmap->start, PMM_COLS * PAGE_SIZE);
-	for (size_t row = 0; row < num_rows; row++) {
+	for (size_t row = bitmap->row_hint; row < num_rows; row++) {
+		for (size_t col = 0; col < PMM_COLS; col++) {
+			if (bitmap_is_free(bitmap, row, col)) {
+				*ret_row = row;
+				*ret_col = col;
+				return 1;
+			}
+		}
+	}
+	for (size_t row = 0; row < bitmap->row_hint; row++) {
 		for (size_t col = 0; col < PMM_COLS; col++) {
 			if (bitmap_is_free(bitmap, row, col)) {
 				*ret_row = row;
@@ -106,6 +119,13 @@ static int bitmap_set_unused(struct bitmap* bitmap, uintptr_t page)
 
 	u64 bit = 1ull << (PMM_COLS - 1 - col);
 	bitmap->data[page_index / PMM_COLS] &= ~bit;
+
+	if (bitmap->free == (size_t)-1)
+		halt_forever();
+
+	bitmap->free++;
+	bitmap->row_hint = page_index / PMM_COLS;
+	return 1;
 }
 
 static int bitmap_set_used(struct bitmap* bitmap, uintptr_t page)
@@ -121,6 +141,11 @@ static int bitmap_set_used(struct bitmap* bitmap, uintptr_t page)
 
 	u64 bit = 1ull << (PMM_COLS - 1 - col);
 	bitmap->data[page_index / PMM_COLS] |= bit;
+
+	if (bitmap->free == 0)
+		halt_forever();
+
+	bitmap->free--;
 	return 1;
 }
 
@@ -192,15 +217,33 @@ static int pmm_free_range(uintptr_t base, size_t size)
 	}
 	return remaining == 0;
 }
-void initialize_container(struct bitmap_container* bitmaps)
+void initialize_bitmaps(struct bitmap_container* bitmaps, struct mb_preserved* multiboot)
 {
 	memset(bitmaps, 0, sizeof(struct bitmap_container));
-	struct bitmap* bitmap;
-	size_t bitmap_index;
 
-	for (bitmap_index = 0; bitmap_index < PMM_MAX_AVAILABLE_ZONES; bitmap_index++) {
-		bitmap = &bitmaps->maps[bitmap_index];
-		memset(bitmap->data, 0xFF, sizeof(bitmap->data));
+	struct bitmap* bitmap;
+	size_t zone_index = 0;
+
+	char* ptr = (char*)(uintptr_t)multiboot->mmap;
+	char* end = ptr + multiboot->info.mmap_length;
+
+	while (ptr < end) {
+		struct mb_mmap_entry* entry = (struct mb_mmap_entry*)ptr;
+
+		if (entry->type == MB_MMAP_AVAILABLE) {
+			if (zone_index >= PMM_MAX_AVAILABLE_ZONES)
+				halt_forever();
+
+			bitmap = &bitmaps->maps[zone_index];
+			bitmap->start = entry->base_addr;
+			bitmap->end = entry->base_addr + entry->length;
+			memset(bitmap->data, 0xFF, sizeof(bitmap->data));
+			bitmap->row_hint = 0;
+			bitmap->free = 0;
+
+			zone_index++;
+		}
+		ptr += entry->size + sizeof(entry->size);
 	}
 }
 
@@ -215,15 +258,9 @@ void free_available_ram(struct bitmap_container* bitmaps, struct mb_preserved* m
 	while (ptr < end) {
 		struct mb_mmap_entry* entry = (struct mb_mmap_entry*)ptr;
 		if (entry->type == MB_MMAP_AVAILABLE) {
-			if (zone_index >= PMM_MAX_AVAILABLE_ZONES)
-				halt_forever();
-
 			bitmap = &bitmaps->maps[zone_index];
-			bitmap->start = entry->base_addr;
-			bitmap->end = entry->base_addr + entry->length;
 			if (!bitmap_free_range(bitmap, entry->base_addr, entry->length))
 				halt_forever();
-
 			zone_index++;
 		}
 		ptr += entry->size + sizeof(entry->size);
@@ -250,7 +287,7 @@ static void reserve_loader(uintptr_t loader_end)
 
 void init_pmm(struct mb_preserved* multiboot, uintptr_t loader_end)
 {
-	initialize_container(&bitmaps);
+	initialize_bitmaps(&bitmaps, multiboot);
 	free_available_ram(&bitmaps, multiboot);
 
 	pmm_reserve_range(0, EXTMEM);

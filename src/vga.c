@@ -3,6 +3,7 @@
 #include <tty.h>
 #include <page_table.h>
 #include <vmm.h>
+#include <memlayout.h>
 
 u32 vga_cursor = 0;
 u16 virtual_screen[VGA_COLS * VGA_ROWS] = { 0 };
@@ -14,7 +15,7 @@ void vga_identity_map_mmio()
 	uintptr_t vga_start = (uintptr_t)VGA_MMIO & ~(PAGE_SIZE);
 	uintptr_t vga_end = CEIL_DIV(vga_start + sizeof(virtual_screen), PAGE_SIZE) * PAGE_SIZE;
 	for (uintptr_t off = vga_start; off < vga_end; off += PAGE_SIZE)
-		x86_map_memory(off, off, cr3, VMM_OBJECT_FLAG_WRITE, 0);
+		x86_map_memory(off, off, cr3, VMM_OBJECT_FLAG_WRITE, HHDM_VOFF);
 }
 
 void vga_shift_up(u16* virt, u32 num)

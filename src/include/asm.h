@@ -25,4 +25,9 @@ static inline u64 pop_cr3()
 	return ret;
 }
 
+static inline void invlpg(uintptr_t virt)
+{
+	asm volatile("invlpg [%0]" ::"r"(virt) : "memory");
+}
+
 #endif
